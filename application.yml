@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:${DB_PORT}/${POSTGRES_DB}
+    url: ${POSTGRES_URL}
     username: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
   jpa:
@@ -12,7 +12,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
-    url: jdbc:postgresql://localhost:${DB_PORT}/${POSTGRES_DB}
+    url: ${POSTGRES_URL}
     user: ${POSTGRES_USER}
     password: ${POSTGRES_PASSWORD}
     locations: classpath:db/migration # Default location for Flyway migration scripts

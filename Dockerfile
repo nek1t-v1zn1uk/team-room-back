@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY gradlew .
 COPY gradle/wrapper/gradle-wrapper.jar gradle/wrapper/
+COPY gradle/wrapper/gradle-wrapper.properties gradle/wrapper/
 COPY build.gradle.kts settings.gradle.kts ./
 
 COPY src ./src

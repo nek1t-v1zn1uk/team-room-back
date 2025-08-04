@@ -15,7 +15,7 @@ RUN ./gradlew bootJar --no-daemon
 # Create the smaller runtime image
 # Use a smaller JRE-only base image for the final production image.
 # This significantly reduces the size of the deployed container.
-FROM openjdk:17-jre-slim
+FROM openjdk:17-jdk-slim
 
 WORKDIR /app
 

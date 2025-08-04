@@ -41,3 +41,4 @@ out/
 
 # Sensitive configuration
 /src/main/resources/secrets.properties
+.env

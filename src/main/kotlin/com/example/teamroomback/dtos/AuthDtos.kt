@@ -1,6 +1,7 @@
 package com.example.teamroomback.dtoss
 
 import com.example.teamroomback.validation.ValidPassword
+import com.example.teamroomback.validation.ValidUsername
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -9,6 +10,7 @@ data class RegisterRequest(
 
     @field:NotBlank(message = "Username cannot be empty")
     @field:Size(min = 4, max = 32, message = "Username must be 4 to 32 characters long")
+    @field:ValidUsername
     val username: String,
 
     @field:NotBlank(message = "Email cannot be empty")

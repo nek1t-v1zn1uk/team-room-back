@@ -9,8 +9,13 @@ import java.util.Collections
 @RequestMapping("/api")
 class DefaultController {
 
-    @GetMapping
-    fun sayHello(): Map<String, String> {
+    @GetMapping("/no-auth")
+    fun sayHelloToEveryone(): Map<String, String> {
+        return Collections.singletonMap("message", "Hello World!")
+    }
+
+    @GetMapping("/with-auth")
+    fun sayHelloToUsersOnly(): Map<String, String> {
         return Collections.singletonMap("message", "Hello World!")
     }
 

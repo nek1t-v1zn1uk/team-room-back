@@ -3,6 +3,7 @@ package com.example.teamroomback.utils
 import com.example.teamroomback.dtos.ErrorResponse
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -12,22 +13,24 @@ import java.time.LocalDateTime
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
-    @ExceptionHandler(MethodArgumentNotValidException::class)
+    @ExceptionHandler(HttpMessageNotReadableException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    fun handleValidationExceptions(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
-        val errors = ex.bindingResult.fieldErrors.map { error ->
-            mapOf(
-                "field" to (error.field ?: "unknown"),
-                "message" to (error.defaultMessage ?: "Validation error")
-            )
-        }
+    fun handleHttpMessageNotReadableException(ex: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> {
+        val errorMessage = ex.message?.let {
+            if (it.contains("Missing required creator property")) {
+                val fieldName = it.substringAfter("Missing required creator property '").substringBefore("'")
+                "Required field '$fieldName' is missing."
+            } else {
+                "Malformed JSON request."
+            }
+        } ?: "Malformed JSON request."
 
         val errorResponse = ErrorResponse(
             timestamp = LocalDateTime.now(),
             status = HttpStatus.BAD_REQUEST.value(),
             error = HttpStatus.BAD_REQUEST.reasonPhrase,
-            message = "Validation failed for one or more fields.",
-            details = errors
+            message = errorMessage,
+            details = null
         )
         return ResponseEntity(errorResponse, HttpStatus.BAD_REQUEST)
     }

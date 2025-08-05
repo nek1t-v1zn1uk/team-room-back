@@ -1,5 +1,6 @@
 package com.example.teamroomback.dtoss
 
+import com.example.teamroomback.validation.ValidPassword
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
@@ -16,7 +17,8 @@ data class RegisterRequest(
     val email: String,
 
     @field:NotBlank(message = "Password cannot be empty")
-    @field:Size(min = 6, max = 100, message = "Password must be 6 to 100 characters long")
+    @field:Size(min = 8, max = 100, message = "Password must be 8 to 100 characters long")
+    @field:ValidPassword
     val password: String
 )
 

@@ -13,6 +13,26 @@ import java.time.LocalDateTime
 @RestControllerAdvice
 class GlobalExceptionHandler {
 
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun handleValidationExceptions(ex: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
+        val errors = ex.bindingResult.fieldErrors.map { error ->
+            mapOf(
+                "field" to (error.field ?: "unknown"),
+                "message" to (error.defaultMessage ?: "Validation error")
+            )
+        }
+
+        val errorResponse = ErrorResponse(
+            timestamp = LocalDateTime.now(),
+            status = HttpStatus.BAD_REQUEST.value(),
+            error = HttpStatus.BAD_REQUEST.reasonPhrase,
+            message = "Validation failed for one or more fields.",
+            details = errors
+        )
+        return ResponseEntity(errorResponse, HttpStatus.BAD_REQUEST)
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleHttpMessageNotReadableException(ex: HttpMessageNotReadableException): ResponseEntity<ErrorResponse> {

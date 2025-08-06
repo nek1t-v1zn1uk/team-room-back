@@ -21,6 +21,9 @@ data class User(
     @Column(name = "password_hash", nullable = false)
     val passwordHash: String,
 
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    val profile: Profile? = null,
+
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {

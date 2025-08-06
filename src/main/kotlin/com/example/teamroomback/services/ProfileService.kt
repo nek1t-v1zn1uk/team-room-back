@@ -31,6 +31,6 @@ class ProfileService(
 
     fun getProfile(username: String): Profile {
         return profileRepository.findByUserUsernameValue(username)
-            ?: throw InstanceNotFoundException("Profile for user \"$username\" not found")
+            ?: throw NoSuchElementException("Profile for user \"$username\" not found")
     }
 }

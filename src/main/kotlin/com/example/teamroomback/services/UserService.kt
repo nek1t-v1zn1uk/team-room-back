@@ -2,6 +2,7 @@ package com.example.teamroomback.services
 
 import com.example.teamroomback.entities.User
 import com.example.teamroomback.repositories.UserRepository
+import org.springframework.http.ResponseEntity
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -44,6 +45,13 @@ class UserService(
     fun findByEmail(email: String): User? {
         return userRepository.findByEmail(email)
             ?: throw UsernameNotFoundException("User with email \"${email}\" not found")
+    }
+
+    fun deleteUser(username: String) {
+        if(userRepository.deleteByUsernameValue(username) == 1)
+            return
+        else
+            throw NoSuchElementException("User with username \"$username\" not found")
     }
 
 }

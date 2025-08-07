@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -51,6 +52,28 @@ class ProfileController(
         return try {
             val authentication = SecurityContextHolder.getContext().authentication
             val profile = profileService.getProfile(authentication.name)
+            ResponseEntity.ok(
+                GetProfileResponse(
+                    firstName = profile.firstName,
+                    lastName = profile.lastName,
+                    biography = profile.biography,
+                    photoUrl = profile.photoUrl,
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Profile searching and sharing failed: ${e.message}"
+                )
+            )
+        }
+    }
+
+    @GetMapping("/{username}")
+    fun getUserProfile(@PathVariable username: String): ResponseEntity<Any> {
+        return try {
+            val profile = profileService.getProfile(username)
+
             ResponseEntity.ok(
                 GetProfileResponse(
                     firstName = profile.firstName,

@@ -19,16 +19,16 @@ data class Profile(
     val id: Long? = null,
 
     @Column(name = "first_name", length = 32, nullable = false)
-    val firstName: String,
+    var firstName: String,
 
     @Column(name = "last_name", length = 32)
-    val lastName: String? = null,
+    var lastName: String? = null,
 
     @Column(name = "biography", length = 100)
-    val biography: String? = null,
+    var biography: String? = null,
 
     @Column(name = "photo_url")
-    val photoUrl: String? = null,
+    var photoUrl: String? = null,
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")

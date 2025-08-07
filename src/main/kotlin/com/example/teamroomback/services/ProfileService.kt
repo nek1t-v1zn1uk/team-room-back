@@ -1,5 +1,6 @@
 package com.example.teamroomback.services
 
+import com.example.teamroomback.dtos.CreateProfileRequest
 import com.example.teamroomback.dtos.PatchProfileRequest
 import com.example.teamroomback.dtos.PutProfileRequest
 import com.example.teamroomback.entities.Profile
@@ -13,19 +14,12 @@ class ProfileService(
     private val userRepository: UserRepository,
     private val profileRepository: ProfileRepository,
 ) {
-    fun createProfile(
-        username: String,
-        firstName: String,
-        lastName: String? = null,
-        biography: String? = null,
-        photoUrl: String? = null,
-    ): Profile {
-
+    fun createProfile(username: String, request: CreateProfileRequest): Profile {
         val profile = Profile(
-            firstName = firstName,
-            lastName = lastName,
-            biography = biography,
-            photoUrl = photoUrl,
+            firstName = request.firstName,
+            lastName = request.lastName,
+            biography = request.biography,
+            photoUrl = request.photoUrl,
             user = userRepository.findByUsernameValue(username)!!
         )
         return profileRepository.save(profile)

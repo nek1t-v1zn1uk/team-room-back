@@ -7,10 +7,8 @@ import com.example.teamroomback.dtos.PatchProfileRequest
 import com.example.teamroomback.dtos.PutProfileRequest
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.UpdateProfileResponse
-import com.example.teamroomback.entities.Profile
 import com.example.teamroomback.services.ProfileService
 import jakarta.validation.Valid
-import org.apache.tomcat.util.net.openssl.ciphers.Authentication
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.context.SecurityContextHolder
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -33,13 +30,8 @@ class ProfileController(
     fun createProfile(@Valid @RequestBody request: CreateProfileRequest): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
-            profileService.createProfile(
-                username = authentication.name,
-                firstName = request.firstName,
-                lastName = request.lastName,
-                biography = request.biography,
-                photoUrl = request.photoUrl,
-            )
+            profileService.createProfile(username = authentication.name, request)
+
             ResponseEntity.ok(
                 CreateProfileResponse(
                     message = "Profile successfully created",

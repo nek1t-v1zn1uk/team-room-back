@@ -5,32 +5,27 @@ import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Controller
 
 @Controller
-class ChatController {
+class ChatController(
+    private val simpMessagingTemplate: SimpMessagingTemplate
+) {
 
     @MessageMapping("/chat.sendMessage")
-    @SendTo("/topic/public")
-    fun sendMessage(@Payload chatMessage: ChatMessage): ChatMessage {
-        println(chatMessage.toString())
-        return chatMessage
+    fun sendMessage(@Payload chatMessage: ChatMessage) {
+        val roomId = chatMessage.roomId
+        val destination = "/topic/rooms/$roomId"
+        simpMessagingTemplate.convertAndSend(destination, chatMessage)
     }
 
     @MessageMapping("/chat.addUser")
-    @SendTo("/topic/public")
-    fun addUser(@Payload chatMessage: ChatMessage, headerAccessor: SimpMessageHeaderAccessor): ChatMessage {
+    fun addUser(@Payload chatMessage: ChatMessage, headerAccessor: SimpMessageHeaderAccessor) {
         headerAccessor.sessionAttributes?.put("username", chatMessage.sender)
-        return chatMessage
+        val roomId = chatMessage.roomId
+        headerAccessor.sessionAttributes?.put("roomId", roomId)
+        val destination = "/topic/rooms/$roomId"
+        simpMessagingTemplate.convertAndSend(destination, chatMessage)
     }
-
-    /*
-    @MessageMapping("/chat")
-    @SendTo("/topic/messages")
-    fun handleMessage(message: ChatMessage): ChatMessage {
-        // This is a simple echo service. The received message is returned directly.
-        // It will be broadcasted to all clients subscribed to "/topic/messages"
-        return message
-    }
-    */
 }

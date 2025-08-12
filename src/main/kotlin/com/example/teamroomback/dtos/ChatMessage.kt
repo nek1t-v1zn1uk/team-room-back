@@ -4,8 +4,9 @@ import java.time.Instant
 
 data class ChatMessage(
     val sender: String,
+    val roomId: String,
     val content: String? = null,
-    //val timestamp: Instant = Instant.now(),
+    val timestamp: Instant = Instant.now(),
     val type: MessageType,
 )
 enum class MessageType {

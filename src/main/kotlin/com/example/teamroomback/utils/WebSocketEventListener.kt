@@ -21,14 +21,15 @@ class WebSocketEventListener(
     fun handleWebSocketDisconnectListener(event: SessionDisconnectEvent){
         val headerAccessor = StompHeaderAccessor.wrap(event.message)
         val username: String = headerAccessor.sessionAttributes?.get("username").toString()
+        val roomId: String = headerAccessor.sessionAttributes?.get("roomId").toString()
         if(username != null){
             println("User disconnected $username")
             val msg = ChatMessage(
-                content = "!!!",
+                roomId = roomId,
                 sender = username,
                 type = MessageType.LEAVE,
             )
-            messageTemplate.convertAndSend("/topic/public", msg)
+            messageTemplate.convertAndSend("/topic/rooms/$roomId", msg)
         }
     }
 }

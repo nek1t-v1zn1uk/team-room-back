@@ -1,0 +1,46 @@
+package com.example.teamroomback.entities
+
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.Table
+import java.time.LocalDateTime
+
+@Entity
+@Table(name = "room_messages")
+data class RoomMessage(
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long? = null,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "room_id")
+    val room: Room,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sender_id")
+    val sender: User,
+
+    @Column(name = "content", nullable = false)
+    val content: String,
+
+    @Column(name = "type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    val type: RoomMessageType,
+
+    @Column(name = "sent_at", nullable = false)
+    val sentAt: LocalDateTime = LocalDateTime.now(),
+)
+
+enum class RoomMessageType {
+    JOIN,
+    CHAT,
+    LEAVE
+}

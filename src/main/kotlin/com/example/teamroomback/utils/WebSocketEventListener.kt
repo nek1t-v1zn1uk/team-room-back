@@ -23,7 +23,6 @@ class WebSocketEventListener(
         val username: String = headerAccessor.sessionAttributes?.get("username").toString()
         val roomId: String = headerAccessor.sessionAttributes?.get("roomId").toString()
         if(username != null){
-            println("User disconnected $username")
             val msg = ChatMessage(
                 roomId = roomId,
                 sender = username,

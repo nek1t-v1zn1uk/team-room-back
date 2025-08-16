@@ -1,15 +1,15 @@
 package com.example.teamroomback.dtos
 
-import java.time.Instant
+import com.example.teamroomback.entities.RoomMessageType
+import jakarta.validation.constraints.NotBlank
 
 data class ChatMessage(
-    val sender: String,
-    val roomId: String,
-    val content: String? = null,
-    val type: MessageType,
+    @field:NotBlank(message = "Missed sender id")
+    val senderId: Long,
+    @field:NotBlank(message = "Missed room id")
+    val roomId: Long,
+    @field:NotBlank(message = "Missed content")
+    val content: String,
+    @field:NotBlank(message = "Missed message type")
+    val type: RoomMessageType,
 )
-enum class MessageType {
-    CHAT,
-    JOIN,
-    LEAVE
-}

@@ -1,7 +1,7 @@
 package com.example.teamroomback.utils
 
 import com.example.teamroomback.dtos.ChatMessage
-import com.example.teamroomback.dtos.MessageType
+import com.example.teamroomback.entities.RoomMessageType
 import lombok.RequiredArgsConstructor
 import lombok.extern.slf4j.Slf4j
 import org.springframework.context.event.EventListener
@@ -20,13 +20,14 @@ class WebSocketEventListener(
     @EventListener
     fun handleWebSocketDisconnectListener(event: SessionDisconnectEvent){
         val headerAccessor = StompHeaderAccessor.wrap(event.message)
-        val username: String = headerAccessor.sessionAttributes?.get("username").toString()
-        val roomId: String = headerAccessor.sessionAttributes?.get("roomId").toString()
-        if(username != null){
+        val userId: Long = headerAccessor.sessionAttributes?.get("userId") as Long
+        val roomId: Long = headerAccessor.sessionAttributes?.get("roomId") as Long
+        if(userId != null){
             val msg = ChatMessage(
                 roomId = roomId,
-                sender = username,
-                type = MessageType.LEAVE,
+                senderId = userId,
+                content = "",
+                type = RoomMessageType.LEAVE,
             )
             messageTemplate.convertAndSend("/topic/rooms/$roomId", msg)
         }

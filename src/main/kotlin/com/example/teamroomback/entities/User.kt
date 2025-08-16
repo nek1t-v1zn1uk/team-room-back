@@ -27,7 +27,7 @@ data class User(
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
     val roomMembers: List<RoomMember> = listOf(),
 
-    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     val roomMessages: List<RoomMessage> = listOf(),
 
 ) : UserDetails {

@@ -78,6 +78,8 @@ dependencies {
     // WebSocket
     implementation("org.springframework.boot:spring-boot-starter-websocket")
 
+    // for enums
+    //implementation("com.vladmihalcea:hibernate-types-60:3.x.x")
 }
 
 kotlin {

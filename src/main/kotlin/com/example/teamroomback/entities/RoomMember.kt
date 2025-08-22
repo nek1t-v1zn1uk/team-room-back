@@ -10,9 +10,9 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
-import jakarta.persistence.OneToMany
-import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 
 @Entity
@@ -30,15 +30,15 @@ data class RoomMember(
     @JoinColumn(name = "user_id")
     val user: User,
 
-    @Column(name = "role", nullable = false)
-    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "role", nullable = false, columnDefinition = "room_role_type")
     val role: RoomMemberRole,
 
     @Column(name = "created_at", nullable = false)
     val createdAt: LocalDateTime = LocalDateTime.now(),
 )
 
-enum class RoomMemberRole{
+enum class RoomMemberRole {
     GUEST,
     MEMBER,
     ADMIN,

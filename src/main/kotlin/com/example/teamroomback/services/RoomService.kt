@@ -47,11 +47,11 @@ class RoomService(
             roomName = newRoom.name,
             photoUrl = newRoom.photoUrl
         ))
-        simpMessagingTemplate.convertAndSendToUser(user.id.toString(), "/queue/notifications", message)
+        simpMessagingTemplate.convertAndSendToUser(user.username, "/queue/notifications", message)
     }
 
     fun joinUser(username: String, request: JoinRoomRequest) {
-        val user = userRepository.findByUsernameValue(username) ?: throw UsernameNotFoundException("User not found")
+        val user = userRepository.findByUsernameValue(request.username) ?: throw UsernameNotFoundException("User not found")
         val room = roomRepository.findRoomById(request.roomId) ?: throw InstanceNotFoundException("Room not found")
 
         val member = roomMemberRepository.save(RoomMember(
@@ -62,10 +62,20 @@ class RoomService(
         val roomMessage = messageRepository.save(RoomMessage(
             room = room,
             sender = user,
-            content = "",
-            type = RoomMessageType.JOIN
+            content = "added by $username",
+            type = RoomMessageType.JOIN,
+
         ))
         val message = WebSocketBroadcast(WebSocketMessageType.USER_JOINED, roomMessage)
         simpMessagingTemplate.convertAndSend("/topic/rooms/${room.id}", message)
+    }
+
+    fun getUserRooms(username: String): List<Room> {
+        val user = userRepository.findByUsernameValue(username) ?: throw UsernameNotFoundException("User not found")
+        return roomRepository.findRoomsByUsername(user.id!!)
+    }
+
+    fun getRoomMembers(roomId: Long): List<RoomMember> {
+        return roomMemberRepository.findRoomMembersByRoomId(roomId)
     }
 }

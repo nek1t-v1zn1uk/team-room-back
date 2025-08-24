@@ -25,8 +25,7 @@ class RoomController(
 
     @MessageMapping("/room.join")
     fun joinRoom(request: JoinRoomRequest, headerAccessor: SimpMessageHeaderAccessor) {
-        val authentication = SecurityContextHolder.getContext().authentication
-        val username: String = authentication.name
+        val username: String = headerAccessor.user!!.name
 
         roomService.joinUser(username, request)
 

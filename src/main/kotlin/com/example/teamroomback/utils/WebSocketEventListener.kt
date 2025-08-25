@@ -1,6 +1,6 @@
 package com.example.teamroomback.utils
 
-import com.example.teamroomback.dtos.ChatMessage
+import com.example.teamroomback.dtos.ChatMessageResponse
 import com.example.teamroomback.entities.RoomMessageType
 import lombok.RequiredArgsConstructor
 import lombok.extern.slf4j.Slf4j
@@ -22,14 +22,14 @@ class WebSocketEventListener(
         val headerAccessor = StompHeaderAccessor.wrap(event.message)
         val userId: Long = headerAccessor.sessionAttributes?.get("userId") as Long
         val roomId: Long = headerAccessor.sessionAttributes?.get("roomId") as Long
-        if(userId != null){
-            val msg = ChatMessage(
+        /*if(userId != null){
+            val msg = ChatMessageResponse(
+                senderUsername = ,
                 roomId = roomId,
-                senderId = userId,
                 content = "",
                 type = RoomMessageType.LEAVE,
             )
             messageTemplate.convertAndSend("/topic/rooms/$roomId", msg)
-        }
+        }*/
     }
 }

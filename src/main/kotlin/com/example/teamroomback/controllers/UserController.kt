@@ -1,5 +1,6 @@
 package com.example.teamroomback.controllers
 
+import com.example.teamroomback.dtos.ChatMessageResponse
 import com.example.teamroomback.dtos.CreateRoomResponse
 import com.example.teamroomback.dtos.GetProfileResponse
 import com.example.teamroomback.dtos.JoinRoomRequest
@@ -8,6 +9,7 @@ import com.example.teamroomback.dtos.RoomRequest
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.WebSocketBroadcast
 import com.example.teamroomback.dtos.WebSocketMessageType
+import com.example.teamroomback.services.MessageService
 import com.example.teamroomback.services.RoomService
 import com.example.teamroomback.services.UserService
 import org.springframework.http.HttpStatus
@@ -25,7 +27,8 @@ import org.springframework.web.bind.annotation.RestController
 class UserController(
     private val simpMessagingTemplate: SimpMessagingTemplate,
     private val userService: UserService,
-    private val roomService: RoomService
+    private val roomService: RoomService,
+    private val messageService: MessageService
 ) {
 
     @DeleteMapping("/api/user")
@@ -82,6 +85,22 @@ class UserController(
                 role = member.role
             ))
             simpMessagingTemplate.convertAndSendToUser(username, "/queue/notifications", message)
+        }
+    }
+    @MessageMapping("/get-room-messages")
+    fun getRoomMessages(request: RoomRequest, headerAccessor: SimpMessageHeaderAccessor){
+        val username = headerAccessor.user!!.name
+        val roomId = request.roomId
+        val messages = messageService.getRoomMessages(roomId)
+
+        for(msg in messages) {
+            val broadcast = WebSocketBroadcast(WebSocketMessageType.CHAT_MESSAGE, ChatMessageResponse(
+                senderUsername = msg.sender.username,
+                roomId = msg.room.id!!,
+                content = msg.content,
+                type = msg.type
+            ))
+            simpMessagingTemplate.convertAndSendToUser(username, "/queue/notifications", broadcast)
         }
     }
 }

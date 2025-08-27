@@ -13,7 +13,7 @@ class CorsConfig {
         return object : WebMvcConfigurer {
             override fun addCorsMappings(registry: CorsRegistry) {
                 registry.addMapping("/**") // Apply to all endpoints
-                    .allowedOrigins("http://localhost:3000") // Replace with your frontend's origin
+                    .allowedOrigins("https://teamroom.onrender.com", "null") // Replace with your frontend's origin
                     .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                     .allowedHeaders("*")
                     .allowCredentials(true)

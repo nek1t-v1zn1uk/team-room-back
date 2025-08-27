@@ -35,7 +35,7 @@ class SecurityConfig {
             .csrf { it.disable() }
             .cors { it.configurationSource(corsConfigurationSource()) } // Add this line
             .authorizeHttpRequests { auth ->
-                auth.requestMatchers("/api/auth/**", "/api/no-auth").permitAll()
+                auth.requestMatchers("/api/auth/**", "/api/no-auth", "/ws/**").permitAll()
                 auth.anyRequest().authenticated()
             }
             .sessionManagement { session ->

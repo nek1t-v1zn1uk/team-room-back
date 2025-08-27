@@ -26,32 +26,58 @@ repositories {
 }
 
 dependencies {
+    // JPA(jakarta) - simplify database interactions
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-security")
+
+    // Web - RESTful API
     implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    // DevTools
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
+    // Kotlin Reflect - to inspect and manipulate Kotlin`s structure and behavior at runtime
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+
+    // Lombok - reduce boilerplate
+    annotationProcessor("org.projectlombok:lombok")
+    compileOnly("org.projectlombok:lombok")
+
+    // Postgres
+    runtimeOnly("org.postgresql:postgresql")
+
+    // Flyway
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.jetbrains.kotlin:kotlin-reflect")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
-    runtimeOnly("org.postgresql:postgresql")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("org.springframework.security:spring-security-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
+    // Docker
+    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+
+    // .env
+    implementation("io.github.cdimascio:dotenv-kotlin:6.5.1")
+
+    // Validation
     implementation("org.springframework.boot:spring-boot-starter-validation")
 
+    // Jackson - convert Kotlin data classes to and from JSON
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
-    implementation("io.github.cdimascio:dotenv-kotlin:6.5.1")
+    // Security
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    testImplementation("org.springframework.security:spring-security-test")
 
     // JWT dependencies
     implementation("io.jsonwebtoken:jjwt-api:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5") // For Jackson for JWT JSON processing
+
+    // Test
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // WebSocket
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
+
 }
 
 kotlin {

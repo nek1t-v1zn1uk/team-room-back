@@ -24,6 +24,12 @@ data class User(
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
     val profile: Profile? = null,
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    val roomMembers: List<RoomMember> = listOf(),
+
+    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
+    val roomMessages: List<RoomMessage> = listOf(),
+
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {

@@ -1,13 +1,12 @@
 package com.example.teamroomback.controllers
 
-import com.example.teamroomback.dtoss.LoginRequest
-import com.example.teamroomback.dtoss.LoginResponse
-import com.example.teamroomback.dtoss.RegisterRequest
-import com.example.teamroomback.dtoss.RegisterResponse
+import com.example.teamroomback.dtos.LoginRequest
+import com.example.teamroomback.dtos.LoginResponse
+import com.example.teamroomback.dtos.RegisterRequest
+import com.example.teamroomback.dtos.RegisterResponse
 import com.example.teamroomback.services.UserService
 import com.example.teamroomback.utils.JwtUtils
 import jakarta.validation.Valid
-import org.apache.coyote.Request
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.authentication.AuthenticationManager

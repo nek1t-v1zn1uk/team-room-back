@@ -1,4 +1,4 @@
-package com.example.teamroomback.dtoss
+package com.example.teamroomback.dtos
 
 import com.example.teamroomback.validation.ValidPassword
 import com.example.teamroomback.validation.ValidUsername

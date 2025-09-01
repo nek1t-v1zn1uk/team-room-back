@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.IOException
 
@@ -12,9 +13,12 @@ class PCloudService {
 
     private val client = OkHttpClient()
     private val hostname = "https://eapi.pcloud.com"
-    private val token = System.getProperty("PCLOUD_TOKEN")
-    private val authUsername = System.getProperty("PCLOUD_USERNAME")
-    private val authPass = System.getProperty("PCLOUD_PASS")
+    @Value("\${PCLOUD_TOKEN}")
+    private lateinit var token: String
+    @Value("\${PCLOUD_USERNAME}")
+    private lateinit var authUsername: String
+    @Value("\${PCLOUD_PASS}")
+    private lateinit var authPass: String
     private val defaultPath = "/Application/team-room"
     private val paths = mutableMapOf(
         "profile-photo" to "/profile_photos"

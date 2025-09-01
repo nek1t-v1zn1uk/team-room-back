@@ -78,6 +78,9 @@ dependencies {
     // WebSocket
     implementation("org.springframework.boot:spring-boot-starter-websocket")
 
+    // Http
+    implementation("com.squareup.okhttp3:okhttp:4.9.0")
+
 }
 
 kotlin {

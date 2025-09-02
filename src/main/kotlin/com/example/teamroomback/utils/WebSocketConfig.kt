@@ -10,7 +10,8 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
-    private val webSocketJwtChannelInterceptor: WebSocketJwtChannelInterceptor
+    private val webSocketJwtChannelInterceptor: WebSocketJwtChannelInterceptor,
+    private val webSocketProfileCheckInterceptor: WebSocketProfileCheckInterceptor
 ) : WebSocketMessageBrokerConfigurer {
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
@@ -26,6 +27,6 @@ class WebSocketConfig(
     }
 
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
-        registration.interceptors(webSocketJwtChannelInterceptor)
+        registration.interceptors(webSocketJwtChannelInterceptor, webSocketProfileCheckInterceptor)
     }
 }

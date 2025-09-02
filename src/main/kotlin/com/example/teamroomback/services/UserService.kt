@@ -1,6 +1,7 @@
 package com.example.teamroomback.services
 
 import com.example.teamroomback.entities.User
+import com.example.teamroomback.repositories.ProfileRepository
 import com.example.teamroomback.repositories.UserRepository
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.userdetails.UserDetails
@@ -13,7 +14,8 @@ import org.springframework.stereotype.Service
 @Service
 class UserService(
     private val userRepository: UserRepository,
-    private val passwordEncoder: PasswordEncoder
+    private val passwordEncoder: PasswordEncoder,
+    private val profileRepository: ProfileRepository
 ) : UserDetailsService {
 
     override fun loadUserByUsername(username: String): UserDetails {
@@ -52,6 +54,10 @@ class UserService(
             return
         else
             throw NoSuchElementException("User with username \"$username\" not found")
+    }
+
+    fun hasProfile(username: String): Boolean {
+        return profileRepository.findByUserUsernameValue(username) != null
     }
 
 }

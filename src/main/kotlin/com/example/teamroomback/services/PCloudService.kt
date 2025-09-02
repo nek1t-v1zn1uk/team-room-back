@@ -31,7 +31,7 @@ class PCloudService {
         return url
     }
 
-    fun getDownloadLink(fileId: Long): String {
+    fun getPubLink(fileId: Long): String {
         val requestPubLink = Request.Builder()
             .url("$hostname/getfilepublink?access_token=$token&fileid=$fileId")
             .build()
@@ -47,9 +47,9 @@ class PCloudService {
         val mapper = ObjectMapper()
         val typeRef = object : TypeReference<Map<String, Any>>() {}
         val pubLinkMap: Map<String, Any> = mapper.readValue(pubLinkResponse.body!!.string(), typeRef)
-        val code = pubLinkMap["code"] as String
+        val link = pubLinkMap["link"] as String
 
-        val requestDownloadLink = Request.Builder()
+        /*val requestDownloadLink = Request.Builder()
             .url("$hostname/getpublinkdownload?code=$code")
             .build()
 
@@ -65,6 +65,9 @@ class PCloudService {
         val path = downloadLinkMap["path"] as String
 
         return "https://${host}$path"
+        */
+
+        return link
     }
 
 

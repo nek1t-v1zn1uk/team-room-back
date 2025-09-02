@@ -23,10 +23,10 @@ class PCloudController(
         ))
     }
 
-    @GetMapping("/get-download-link")
-    fun getUploadLink(@RequestParam fileId: Long): ResponseEntity<Any> {
+    @GetMapping("/get-public-link")
+    fun getPublicLink(@RequestParam fileid: Long): ResponseEntity<Any> {
         return ResponseEntity.ok(DownloadLinkResponse(
-            link = service.getDownloadLink(fileId)
+            link = service.getPubLink(fileid)
         ))
     }
 

@@ -30,6 +30,9 @@ data class User(
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     val roomMessages: List<RoomMessage> = listOf(),
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    val courseMembers: List<CourseMember> = listOf(),
+
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {

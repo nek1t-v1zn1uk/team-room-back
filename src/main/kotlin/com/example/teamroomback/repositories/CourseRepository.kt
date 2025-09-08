@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface CourseRepository : JpaRepository<Course, Long> {
+    fun findCourseById(id: Long): Course?
 }

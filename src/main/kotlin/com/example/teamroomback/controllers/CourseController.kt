@@ -1,5 +1,7 @@
 package com.example.teamroomback.controllers
 
+import com.example.teamroomback.dtos.AddCourseMemberRequest
+import com.example.teamroomback.dtos.AddCourseMemberResponse
 import com.example.teamroomback.dtos.CreateCourseRequest
 import com.example.teamroomback.dtos.CreateCourseResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
@@ -66,8 +68,28 @@ class CourseController(
 
     }
 
-    fun addMember(){
+    @PostMapping("/{id}/members")
+    //@PreAuthorize("hasPermission(#id, 'LEADER')")
+    fun addMember(@RequestBody request: AddCourseMemberRequest, @PathVariable id: Long): ResponseEntity<Any> {
+        return try{
+            val authentication = SecurityContextHolder.getContext().authentication
 
+            val courseMember = courseService.addCourseMember(id, request)
+
+            ResponseEntity.ok(
+                AddCourseMemberResponse(
+                    message = "Member joined successfully",
+                    username = courseMember.user.username,
+                    courseId = courseMember.course.id!!,
+                )
+            )
+        } catch (e: Exception){
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Member joining failed: ${e.message}.",
+                )
+            )
+        }
     }
 
 

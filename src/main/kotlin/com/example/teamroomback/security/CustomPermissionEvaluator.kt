@@ -13,8 +13,9 @@ class CustomPermissionEvaluator(
 ) : PermissionEvaluator {
 
     override fun hasPermission(authentication: Authentication, targetDomainObject: Any?, permission: Any?): Boolean {
-        //println("authentication ${authentication.name} target $targetDomainObject")
+
         if (permission is String) {
+
             val courseId = targetDomainObject as Long
             val requiredRole = CourseMemberRole.valueOf(permission)
 

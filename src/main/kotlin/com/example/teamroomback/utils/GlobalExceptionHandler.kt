@@ -72,14 +72,33 @@ class GlobalExceptionHandler {
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleAllUncaughtException(ex: Exception): ResponseEntity<ErrorResponse> {
-        val errorResponse = ErrorResponse(
-            timestamp = LocalDateTime.now(),
-            status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            error = HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase,
-            message = "An unexpected error occurred. Please try again later."
-        )
+        val response: ResponseEntity<ErrorResponse>
+
+        if(ex.message == "Access Denied") {
+            response = ResponseEntity(
+                ErrorResponse(
+                    timestamp = LocalDateTime.now(),
+                    status = HttpStatus.FORBIDDEN.value(),
+                    error = HttpStatus.FORBIDDEN.reasonPhrase,
+                    message = "Access Denied: You do not have the required permissions."
+                ),
+                HttpStatus.FORBIDDEN
+            )
+        }
+        else{
+            response = ResponseEntity(
+                ErrorResponse(
+                    timestamp = LocalDateTime.now(),
+                    status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    error = HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase,
+                    message = "An unexpected error occurred. Please try again later."
+                ),
+                HttpStatus.INTERNAL_SERVER_ERROR
+            )
+        }
+
         // Log the full stack trace for debugging on the server side
         ex.printStackTrace()
-        return ResponseEntity(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR)
+        return response
     }
 }

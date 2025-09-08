@@ -6,6 +6,7 @@ import org.springframework.security.access.PermissionEvaluator
 import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Component
 import java.io.Serializable
+import javax.management.InstanceNotFoundException
 
 @Component
 class CustomPermissionEvaluator(
@@ -20,8 +21,7 @@ class CustomPermissionEvaluator(
             val requiredRole = CourseMemberRole.valueOf(permission)
 
             val userRole = courseService.getRoleInCourse(authentication.name, courseId)
-                ?: throw NoSuchElementException(
-                    "Course membership for user \"${authentication.name}\" in course with id \"${courseId}\" not found")
+                ?: return false
 
             return userRole.isAtLeast(requiredRole)
         }

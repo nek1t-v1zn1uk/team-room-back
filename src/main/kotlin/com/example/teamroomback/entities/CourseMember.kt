@@ -46,4 +46,13 @@ enum class CourseMemberRole {
     fun isAtLeast(other: CourseMemberRole): Boolean {
         return this.ordinal <= other.ordinal
     }
+
+    fun canManage(other: CourseMemberRole): Boolean {
+        return when (this) {
+            OWNER -> true
+            PROFESSOR -> other != OWNER && other != PROFESSOR
+            LEADER -> other == STUDENT
+            else -> false
+        }
+    }
 }

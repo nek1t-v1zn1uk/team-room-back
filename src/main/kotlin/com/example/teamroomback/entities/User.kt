@@ -45,4 +45,7 @@ data class User(
     override fun isCredentialsNonExpired(): Boolean = true
     override fun isEnabled(): Boolean = true
 
+    /*override fun toString(): String {
+        return "User(id=$id, usernameValue='$usernameValue', email='$email', passwordHash='$passwordHash')"
+    }*/
 }

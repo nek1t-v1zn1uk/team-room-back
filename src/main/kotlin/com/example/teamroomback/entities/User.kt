@@ -30,6 +30,9 @@ data class User(
     @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
     val roomMessages: List<RoomMessage> = listOf(),
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    val courseMembers: List<CourseMember> = listOf(),
+
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {
@@ -42,4 +45,7 @@ data class User(
     override fun isCredentialsNonExpired(): Boolean = true
     override fun isEnabled(): Boolean = true
 
+    /*override fun toString(): String {
+        return "User(id=$id, usernameValue='$usernameValue', email='$email', passwordHash='$passwordHash')"
+    }*/
 }

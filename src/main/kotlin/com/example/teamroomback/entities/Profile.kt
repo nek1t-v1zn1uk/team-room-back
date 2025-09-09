@@ -33,4 +33,8 @@ data class Profile(
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     val user: User,
-)
+) {
+    /*override fun toString(): String {
+        return "Profile(id=$id, firstName='$firstName', lastName='$lastName', biography='$biography', photoUrl=$photoUrl)"
+    }*/
+}

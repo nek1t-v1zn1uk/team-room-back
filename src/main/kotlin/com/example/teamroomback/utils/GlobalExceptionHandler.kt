@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.security.access.AccessDeniedException
 import java.time.LocalDateTime
 
 @RestControllerAdvice
@@ -68,18 +69,36 @@ class GlobalExceptionHandler {
         return ResponseEntity(errorResponse, HttpStatus.CONFLICT)
     }
 
+    @ExceptionHandler(AccessDeniedException::class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    fun handleAccessDeniedException(ex: AccessDeniedException): ResponseEntity<ErrorResponse> {
+        val response = ResponseEntity(
+            ErrorResponse(
+                timestamp = LocalDateTime.now(),
+                status = HttpStatus.FORBIDDEN.value(),
+                error = HttpStatus.FORBIDDEN.reasonPhrase,
+                message = if(ex.message == "Access Denied") "Access Denied: You do not have the required permissions." else ex.message
+            ),
+            HttpStatus.FORBIDDEN
+        )
+        return response
+    }
+
     // A general handler for any other unexpected exceptions
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun handleAllUncaughtException(ex: Exception): ResponseEntity<ErrorResponse> {
-        val errorResponse = ErrorResponse(
-            timestamp = LocalDateTime.now(),
-            status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            error = HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase,
-            message = "An unexpected error occurred. Please try again later."
-        )
+        val response = ResponseEntity(
+                ErrorResponse(
+                    timestamp = LocalDateTime.now(),
+                    status = HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                    error = HttpStatus.INTERNAL_SERVER_ERROR.reasonPhrase,
+                    message = "An unexpected error occurred. Please try again later."
+                ),
+                HttpStatus.INTERNAL_SERVER_ERROR
+            )
         // Log the full stack trace for debugging on the server side
         ex.printStackTrace()
-        return ResponseEntity(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR)
+        return response
     }
 }

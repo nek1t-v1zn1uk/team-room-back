@@ -105,7 +105,7 @@ class ProfileController(
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 SimpleMessageResponse(
-                    message = "Profile update failed: ${e.message}"
+                    message = "Profile putting failed: ${e.message}"
                 )
             )
         }
@@ -125,7 +125,7 @@ class ProfileController(
         } catch (e: Exception) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 SimpleMessageResponse(
-                    message = "Profile update failed: ${e.message}"
+                    message = "Profile patching failed: ${e.message}"
                 )
             )
         }

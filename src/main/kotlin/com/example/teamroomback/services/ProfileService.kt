@@ -30,6 +30,15 @@ class ProfileService(
             ?: throw NoSuchElementException("Profile for user \"$username\" not found")
     }
 
+    fun hasProfile(username: String): Boolean {
+        return try {
+            getProfile(username)
+            true
+        } catch (e: Exception){
+            false
+        }
+    }
+
     fun putProfile(username: String, request: PutProfileRequest): Profile {
         val profile = getProfile(username)
         profile.firstName = request.firstName

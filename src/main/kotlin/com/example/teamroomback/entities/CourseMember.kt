@@ -49,7 +49,7 @@ enum class CourseMemberRole {
 
     fun canManage(other: CourseMemberRole): Boolean {
         return when (this) {
-            OWNER -> true
+            OWNER -> other != OWNER
             PROFESSOR -> other != OWNER && other != PROFESSOR
             LEADER -> other == STUDENT
             else -> false

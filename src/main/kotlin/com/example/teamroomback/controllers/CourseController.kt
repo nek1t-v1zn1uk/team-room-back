@@ -49,11 +49,52 @@ class CourseController(
         }
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
-    fun updateCourse(@PathVariable id: Long) {
+    @GetMapping("/{id}")
+    @PreAuthorize("hasPermission(#id, 'VIEWER')")
+    fun getCourse(@PathVariable id: Long): ResponseEntity<Any> {
+        return try {
 
+            val course = courseService.getCourseById(id)
+
+            ResponseEntity.ok(
+                CourseDTO(
+                    id = course.id!!,
+                    name= course.name,
+                    photoUrl = course.photoUrl,
+                    isOpen = course.isOpen,
+                )
+            )
+        } catch (e: Exception){
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Course updating failed: ${e.message}.",
+                )
+            )
+        }
     }
+
+
+    /*@PutMapping("/{id}")
+    @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    fun updateCourse(@PathVariable id: Long): ResponseEntity<Any> {
+        return try {
+
+            courseService.deleteCourse(id)
+
+            ResponseEntity.ok(
+                DeleteCourseResponse(
+                    courseId = id,
+                    message = "Course deleted successfully"
+                )
+            )
+        } catch (e: Exception){
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Course updating failed: ${e.message}.",
+                )
+            )
+        }
+    }*/
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'OWNER')")
@@ -122,6 +163,12 @@ class CourseController(
                     message = "Member joined successfully",
                     username = courseMember.user.username,
                     courseId = courseMember.course.id!!,
+                )
+            )
+        } catch (e: IllegalArgumentException){
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Member joining failed: ${e.message}.",
                 )
             )
         } catch (e: InstanceNotFoundException){

@@ -44,17 +44,34 @@ class CourseService(
         return course
     }
 
+    fun getCourseById(courseId: Long): Course {
+        return courseRepository.findCourseById(courseId)
+            ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
+    }
+
     fun addCourseMember(username: String, courseId: Long, request: AddCourseMemberRequest): CourseMember {
+        // no more than one owner
+        if(request.role == CourseMemberRole.OWNER)
+            throw IllegalArgumentException("You dont have permission to add members with role \"${request.role}\"")
+
+        // user(who is being added) must exist
         val user = userRepository.findByUsernameValue(request.username)
             ?: throw InstanceNotFoundException("User with username \"${request.username}\" not found")
 
+        // user(who is being added) must have profile
         if(!profileService.hasProfile(request.username))
             throw InstanceNotFoundException("Profile for user with username \"${request.username}\" not found")
 
         val currentMember = courseMemberRepository.findByUserUsernameValueAndCourseId(username, courseId)
             ?: throw InstanceNotFoundException("User with username \"$username\" is not a member of course with id \"${courseId}\"")
+        // invitor must have enough rights to add user
         if(!currentMember.role.canManage(request.role))
             throw IllegalAccessException("You dont have permission to add members with role \"${request.role}\"")
+
+        // user must not be a member of course
+        if(courseMemberRepository.findByUserUsernameValueAndCourseId(request.username, courseId) != null)
+            throw IllegalArgumentException("User with username \"${request.username}\" is already a member of course with id \"${courseId}\"")
+
 
         val courseMember = courseMemberRepository.save(CourseMember(
             user = user,

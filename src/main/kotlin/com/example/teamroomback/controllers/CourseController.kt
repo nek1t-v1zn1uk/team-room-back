@@ -3,6 +3,7 @@ package com.example.teamroomback.controllers
 import com.example.teamroomback.dtos.AddCourseMemberRequest
 import com.example.teamroomback.dtos.AddCourseMemberResponse
 import com.example.teamroomback.dtos.CourseDTO
+import com.example.teamroomback.dtos.CourseMemberDTO
 import com.example.teamroomback.dtos.CreateCourseRequest
 import com.example.teamroomback.dtos.CreateCourseResponse
 import com.example.teamroomback.dtos.DeleteCourseResponse
@@ -62,6 +63,13 @@ class CourseController(
                     name= course.name,
                     photoUrl = course.photoUrl,
                     isOpen = course.isOpen,
+                    members = course.courseMembers.map {
+                        CourseMemberDTO(
+                            username = it.user.username,
+                            role = it.role,
+                            createdAt = it.createdAt
+                        )
+                    }
                 )
             )
         } catch (e: Exception){

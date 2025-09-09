@@ -5,6 +5,7 @@ import com.example.teamroomback.dtos.AddCourseMemberResponse
 import com.example.teamroomback.dtos.CourseDTO
 import com.example.teamroomback.dtos.CreateCourseRequest
 import com.example.teamroomback.dtos.CreateCourseResponse
+import com.example.teamroomback.dtos.DeleteCourseResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.UserCoursesResponse
 import com.example.teamroomback.services.CourseService
@@ -37,6 +38,7 @@ class CourseController(
 
             ResponseEntity.ok(CreateCourseResponse(
                 courseId = course.id!!,
+                message = "Course created successfully"
             ))
         } catch (e: Exception){
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
@@ -49,14 +51,30 @@ class CourseController(
 
     @PutMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
-    fun updateCourse(@PathVariable id: Long): String {
-        return "GG"
+    fun updateCourse(@PathVariable id: Long) {
+
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'OWNER')")
-    fun deleteCourse(@PathVariable id: Long): String {
-        return "GG"
+    fun deleteCourse(@PathVariable id: Long): ResponseEntity<Any> {
+        return try {
+
+            courseService.deleteCourse(id)
+
+            ResponseEntity.ok(
+                DeleteCourseResponse(
+                    courseId = id,
+                    message = "Course deleted successfully"
+                )
+            )
+        } catch (e: Exception){
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Course deletion failed: ${e.message}.",
+                )
+            )
+        }
     }
 
 

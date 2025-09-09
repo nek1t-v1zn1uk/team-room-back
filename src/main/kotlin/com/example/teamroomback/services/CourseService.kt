@@ -65,6 +65,10 @@ class CourseService(
         return courseMember
     }
 
+    fun deleteCourse(courseId: Long) {
+        courseRepository.deleteById(courseId)
+    }
+
     fun getUserCourses(username: String): List<Course> {
         val courses = courseRepository.findCoursesByUsername(username)
         return courses

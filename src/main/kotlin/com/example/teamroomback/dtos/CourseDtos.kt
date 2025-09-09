@@ -16,6 +16,12 @@ data class CreateCourseRequest(
 )
 data class CreateCourseResponse(
     val courseId: Long,
+    val message: String
+)
+
+data class DeleteCourseResponse(
+    val courseId: Long,
+    val message: String
 )
 
 data class UserCoursesResponse(

@@ -1,5 +1,6 @@
 package com.example.teamroomback.entities
 
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
@@ -25,6 +26,6 @@ data class Course(
     @Column(name = "is_open")
     val isOpen: Boolean = true,
 
-    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
     val courseMembers: List<CourseMember> = listOf(),
 )

@@ -14,6 +14,7 @@ import com.example.teamroomback.dtos.PutCourseResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.UserCoursesResponse
 import com.example.teamroomback.services.CourseService
+import com.example.teamroomback.validation.CourseOpenStatus
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -88,6 +89,7 @@ class CourseController(
 
     @PutMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @CourseOpenStatus
     fun putCourse(@PathVariable id: Long, @RequestBody request: PutCourseRequest): ResponseEntity<Any> {
         return try {
 

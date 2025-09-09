@@ -18,13 +18,13 @@ data class Course(
     val id: Long? = null,
 
     @Column(name = "name", length = 100, nullable = false)
-    val name: String,
+    var name: String,
 
     @Column(name = "photo_url")
-    val photoUrl: String? = null,
+    var photoUrl: String? = null,
 
     @Column(name = "is_open")
-    val isOpen: Boolean = true,
+    var isOpen: Boolean = true,
 
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
     val courseMembers: List<CourseMember> = listOf(),

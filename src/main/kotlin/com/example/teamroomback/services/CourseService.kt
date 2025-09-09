@@ -2,6 +2,8 @@ package com.example.teamroomback.services
 
 import com.example.teamroomback.dtos.AddCourseMemberRequest
 import com.example.teamroomback.dtos.CreateCourseRequest
+import com.example.teamroomback.dtos.PatchCourseRequest
+import com.example.teamroomback.dtos.PutCourseRequest
 import com.example.teamroomback.entities.Course
 import com.example.teamroomback.entities.CourseMember
 import com.example.teamroomback.entities.CourseMemberRole
@@ -47,6 +49,22 @@ class CourseService(
     fun getCourseById(courseId: Long): Course {
         return courseRepository.findCourseById(courseId)
             ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
+    }
+
+    fun putCourse(courseId: Long, request: PutCourseRequest): Course {
+        val course = getCourseById(courseId)
+        course.name = request.name
+        course.photoUrl = request.photoUrl
+
+        return courseRepository.save(course)
+    }
+
+    fun patchCourse(courseId: Long, request: PatchCourseRequest): Course {
+        val course = getCourseById(courseId)
+        request.name?.let { course.name = it }
+        request.photoUrl?.let { course.photoUrl = it }
+
+        return courseRepository.save(course)
     }
 
     fun addCourseMember(username: String, courseId: Long, request: AddCourseMemberRequest): CourseMember {

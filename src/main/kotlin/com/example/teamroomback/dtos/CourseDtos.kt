@@ -26,6 +26,24 @@ data class CreateCourseResponse(
     val message: String
 )
 
+data class PutCourseRequest(
+    val name: String,
+    val photoUrl: String? = null
+)
+data class PutCourseResponse(
+    val courseId: Long,
+    val message: String
+)
+
+data class PatchCourseRequest(
+    val name: String? = null,
+    val photoUrl: String? = null
+)
+data class PatchCourseResponse(
+    val courseId: Long,
+    val message: String
+)
+
 data class DeleteCourseResponse(
     val courseId: Long,
     val message: String

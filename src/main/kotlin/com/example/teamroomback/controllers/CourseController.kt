@@ -7,6 +7,10 @@ import com.example.teamroomback.dtos.CourseMemberDTO
 import com.example.teamroomback.dtos.CreateCourseRequest
 import com.example.teamroomback.dtos.CreateCourseResponse
 import com.example.teamroomback.dtos.DeleteCourseResponse
+import com.example.teamroomback.dtos.PatchCourseRequest
+import com.example.teamroomback.dtos.PatchCourseResponse
+import com.example.teamroomback.dtos.PutCourseRequest
+import com.example.teamroomback.dtos.PutCourseResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.UserCoursesResponse
 import com.example.teamroomback.services.CourseService
@@ -16,6 +20,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
@@ -75,34 +80,55 @@ class CourseController(
         } catch (e: Exception){
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 SimpleMessageResponse(
-                    message = "Course updating failed: ${e.message}.",
+                    message = "Course searching and sharing failed: ${e.message}.",
                 )
             )
         }
     }
 
-
-    /*@PutMapping("/{id}")
+    @PutMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
-    fun updateCourse(@PathVariable id: Long): ResponseEntity<Any> {
+    fun putCourse(@PathVariable id: Long, @RequestBody request: PutCourseRequest): ResponseEntity<Any> {
         return try {
 
-            courseService.deleteCourse(id)
+            val newCourse = courseService.putCourse(id, request)
 
             ResponseEntity.ok(
-                DeleteCourseResponse(
-                    courseId = id,
-                    message = "Course deleted successfully"
+                PutCourseResponse(
+                    courseId = newCourse.id!!,
+                    message = "Course updated successfully"
                 )
             )
         } catch (e: Exception){
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 SimpleMessageResponse(
-                    message = "Course updating failed: ${e.message}.",
+                    message = "Course putting failed: ${e.message}.",
                 )
             )
         }
-    }*/
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    fun patchCourse(@PathVariable id: Long, @RequestBody request: PatchCourseRequest): ResponseEntity<Any> {
+        return try {
+
+            val newCourse = courseService.patchCourse(id, request)
+
+            ResponseEntity.ok(
+                PatchCourseResponse(
+                    courseId = newCourse.id!!,
+                    message = "Course updated successfully"
+                )
+            )
+        } catch (e: Exception){
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Course patching failed: ${e.message}.",
+                )
+            )
+        }
+    }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'OWNER')")

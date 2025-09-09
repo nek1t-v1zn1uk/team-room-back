@@ -152,13 +152,44 @@ class CourseController(
         }
     }
 
+    @PostMapping("/{id}/open")
+    @PreAuthorize("hasPermission(#id, 'OWNER')")
+    fun openCourse(@PathVariable id: Long): ResponseEntity<Any> {
+        return try{
+            courseService.openCourse(id)
 
-    fun openCourse(){
-
+            ResponseEntity.ok(
+                SimpleMessageResponse(
+                    message = "Course opened successfully",
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Course opening failed: ${e.message}.",
+                )
+            )
+        }
     }
 
-    fun closeCourse(){
+    @PostMapping("/{id}/close")
+    @PreAuthorize("hasPermission(#id, 'OWNER')")
+    fun closeCourse(@PathVariable id: Long): ResponseEntity<Any> {
+        return try{
+            courseService.closeCourse(id)
 
+            ResponseEntity.ok(
+                SimpleMessageResponse(
+                    message = "Course closed successfully",
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Course closing failed: ${e.message}.",
+                )
+            )
+        }
     }
 
     @GetMapping

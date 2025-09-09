@@ -67,6 +67,20 @@ class CourseService(
         return courseRepository.save(course)
     }
 
+    fun openCourse(courseId: Long){
+        val course = courseRepository.findCourseById(courseId)
+            ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
+        course.isOpen = true
+        courseRepository.save(course)
+    }
+
+    fun closeCourse(courseId: Long){
+        val course = courseRepository.findCourseById(courseId)
+            ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
+        course.isOpen = false
+        courseRepository.save(course)
+    }
+
     fun addCourseMember(username: String, courseId: Long, request: AddCourseMemberRequest): CourseMember {
         // no more than one owner
         if(request.role == CourseMemberRole.OWNER)

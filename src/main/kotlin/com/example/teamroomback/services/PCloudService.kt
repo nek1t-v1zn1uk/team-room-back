@@ -21,13 +21,14 @@ class PCloudService {
     private lateinit var authPass: String
     private val defaultPath = "/Application/team-room"
     private val paths = mutableMapOf(
-        "profile-photo" to "/profile_photos"
+        "profile-photo" to "/profile_photos",
+        "course-photo" to "/course_photos",
     )
 
     fun getUploadLink(purpose: String): String{
 
         val url = "$hostname/uploadfile?access_token=$token&path=${paths[purpose]}"
-        println(token)
+
         return url
     }
 

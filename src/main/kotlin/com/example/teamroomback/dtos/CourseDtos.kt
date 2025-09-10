@@ -63,3 +63,18 @@ data class AddCourseMemberResponse(
     val courseId: Long,
     val message: String
 )
+
+data class PutCourseMemberRoleRequest(
+    val username: String,
+    val role: CourseMemberRole,
+)
+data class PutCourseMemberRoleResponse(
+    val username: String,
+    val newRole: CourseMemberRole,
+    val message: String
+)
+
+data class DeleteCourseMemberResponse(
+    val username: String,
+    val message: String
+)

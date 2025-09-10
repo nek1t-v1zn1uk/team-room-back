@@ -6,9 +6,12 @@ import com.example.teamroomback.dtos.CourseDTO
 import com.example.teamroomback.dtos.CourseMemberDTO
 import com.example.teamroomback.dtos.CreateCourseRequest
 import com.example.teamroomback.dtos.CreateCourseResponse
+import com.example.teamroomback.dtos.DeleteCourseMemberResponse
 import com.example.teamroomback.dtos.DeleteCourseResponse
 import com.example.teamroomback.dtos.PatchCourseRequest
 import com.example.teamroomback.dtos.PatchCourseResponse
+import com.example.teamroomback.dtos.PutCourseMemberRoleRequest
+import com.example.teamroomback.dtos.PutCourseMemberRoleResponse
 import com.example.teamroomback.dtos.PutCourseRequest
 import com.example.teamroomback.dtos.PutCourseResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
@@ -27,6 +30,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import javax.management.InstanceNotFoundException
 
@@ -112,6 +116,7 @@ class CourseController(
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @CourseOpenStatus
     fun patchCourse(@PathVariable id: Long, @RequestBody request: PatchCourseRequest): ResponseEntity<Any> {
         return try {
 
@@ -156,6 +161,7 @@ class CourseController(
 
     @PostMapping("/{id}/open")
     @PreAuthorize("hasPermission(#id, 'OWNER')")
+    @CourseOpenStatus(false)
     fun openCourse(@PathVariable id: Long): ResponseEntity<Any> {
         return try{
             courseService.openCourse(id)
@@ -176,6 +182,7 @@ class CourseController(
 
     @PostMapping("/{id}/close")
     @PreAuthorize("hasPermission(#id, 'OWNER')")
+    @CourseOpenStatus
     fun closeCourse(@PathVariable id: Long): ResponseEntity<Any> {
         return try{
             courseService.closeCourse(id)
@@ -219,6 +226,7 @@ class CourseController(
 
     @PostMapping("/{id}/members")
     @PreAuthorize("hasPermission(#id, 'LEADER')")
+    @CourseOpenStatus
     fun addMember(@RequestBody request: AddCourseMemberRequest, @PathVariable id: Long): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
@@ -259,5 +267,83 @@ class CourseController(
         }
     }
 
+    @PutMapping("/{id}/members")
+    @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @CourseOpenStatus
+    fun changeMemberRole(@PathVariable id: Long, @RequestBody request: PutCourseMemberRoleRequest): ResponseEntity<Any> {
+        return try{
+            val authentication = SecurityContextHolder.getContext().authentication
+
+            val courseMember = courseService.changeCourseMemberRole(authentication.name, id, request)
+
+            ResponseEntity.ok(
+                PutCourseMemberRoleResponse(
+                    username = courseMember.user.username,
+                    newRole = courseMember.role,
+                    message = "Member role changed successfully",
+                )
+            )
+        } catch (e: IllegalArgumentException){
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Member role changing failed: ${e.message}.",
+                )
+            )
+        } catch (e: InstanceNotFoundException){
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Member role changing failed: ${e.message}.",
+                )
+            )
+        } catch (e: IllegalAccessException){
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                SimpleMessageResponse(
+                    message = "Member role changing failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception){
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Member role changing failed: ${e.message}.",
+                )
+            )
+        }
+    }
+
+    @DeleteMapping("/{id}/members")
+    @PreAuthorize("hasPermission(#id, 'LEADER')")
+    @CourseOpenStatus
+    fun deleteMember(@PathVariable id: Long, @RequestParam username: String): ResponseEntity<Any> {
+        return try{
+            val authentication = SecurityContextHolder.getContext().authentication
+
+            courseService.deleteCourseMember(authentication.name, id, username)
+
+            ResponseEntity.ok(
+                DeleteCourseMemberResponse(
+                    username = username,
+                    message = "Member deleted successfully",
+                )
+            )
+        } catch (e: InstanceNotFoundException){
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Member deletion failed: ${e.message}.",
+                )
+            )
+        } catch (e: IllegalAccessException){
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                SimpleMessageResponse(
+                    message = "Member deletion failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception){
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Member deletion failed: ${e.message}.",
+                )
+            )
+        }
+    }
 
 }

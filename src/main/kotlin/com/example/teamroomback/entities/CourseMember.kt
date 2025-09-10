@@ -22,7 +22,7 @@ data class CourseMember(
 
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "role", nullable = false, columnDefinition = "course_member_role")
-    val role: CourseMemberRole = CourseMemberRole.STUDENT,
+    var role: CourseMemberRole = CourseMemberRole.STUDENT,
 
     @Column(name = "created_at", nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now(),

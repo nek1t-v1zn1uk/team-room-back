@@ -18,6 +18,7 @@ import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.UserCoursesResponse
 import com.example.teamroomback.services.CourseService
 import com.example.teamroomback.validation.CourseOpenStatus
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
@@ -41,7 +42,7 @@ class CourseController(
 ) {
 
     @PostMapping
-    fun createCourse(@RequestBody request: CreateCourseRequest): ResponseEntity<Any> {
+    fun createCourse(@Valid @RequestBody request: CreateCourseRequest): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
 
@@ -94,7 +95,7 @@ class CourseController(
     @PutMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
-    fun putCourse(@PathVariable id: Long, @RequestBody request: PutCourseRequest): ResponseEntity<Any> {
+    fun putCourse(@PathVariable id: Long, @Valid @RequestBody request: PutCourseRequest): ResponseEntity<Any> {
         return try {
 
             val newCourse = courseService.putCourse(id, request)
@@ -117,7 +118,7 @@ class CourseController(
     @PatchMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
-    fun patchCourse(@PathVariable id: Long, @RequestBody request: PatchCourseRequest): ResponseEntity<Any> {
+    fun patchCourse(@PathVariable id: Long, @Valid @RequestBody request: PatchCourseRequest): ResponseEntity<Any> {
         return try {
 
             val newCourse = courseService.patchCourse(id, request)
@@ -227,7 +228,7 @@ class CourseController(
     @PostMapping("/{id}/members")
     @PreAuthorize("hasPermission(#id, 'LEADER')")
     @CourseOpenStatus
-    fun addMember(@RequestBody request: AddCourseMemberRequest, @PathVariable id: Long): ResponseEntity<Any> {
+    fun addMember(@PathVariable id: Long, @Valid @RequestBody request: AddCourseMemberRequest): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
 
@@ -270,7 +271,7 @@ class CourseController(
     @PutMapping("/{id}/members")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
-    fun changeMemberRole(@PathVariable id: Long, @RequestBody request: PutCourseMemberRoleRequest): ResponseEntity<Any> {
+    fun changeMemberRole(@PathVariable id: Long, @Valid @RequestBody request: PutCourseMemberRoleRequest): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
 

@@ -2,6 +2,8 @@ package com.example.teamroomback.dtos
 
 import com.example.teamroomback.entities.Course
 import com.example.teamroomback.entities.CourseMemberRole
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
 
 data class CourseDTO(
@@ -18,6 +20,8 @@ data class CourseMemberDTO(
 )
 
 data class CreateCourseRequest(
+    @field:NotBlank(message = "Name cannot be empty")
+    @field:Size(max = 100)
     val name: String,
     val photoUrl: String? = null
 )
@@ -27,6 +31,8 @@ data class CreateCourseResponse(
 )
 
 data class PutCourseRequest(
+    @field:NotBlank(message = "Name cannot be empty")
+    @field:Size(max = 100)
     val name: String,
     val photoUrl: String? = null
 )
@@ -36,6 +42,7 @@ data class PutCourseResponse(
 )
 
 data class PatchCourseRequest(
+    @field:Size(max = 100)
     val name: String? = null,
     val photoUrl: String? = null
 )
@@ -55,7 +62,10 @@ data class UserCoursesResponse(
 )
 
 data class AddCourseMemberRequest(
+    @NotBlank(message = "Username cannot be empty")
+    @field:Size(min = 4, max = 32, message = "Username must be 4 to 32 characters long")
     val username: String,
+    @NotBlank(message = "Role cannot be empty")
     val role: CourseMemberRole
 )
 data class AddCourseMemberResponse(
@@ -65,6 +75,8 @@ data class AddCourseMemberResponse(
 )
 
 data class PutCourseMemberRoleRequest(
+    @NotBlank(message = "Username cannot be empty")
+    @field:Size(min = 4, max = 32, message = "Username must be 4 to 32 characters long")
     val username: String,
     val role: CourseMemberRole,
 )

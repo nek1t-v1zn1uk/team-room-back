@@ -33,6 +33,9 @@ data class User(
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     val courseMembers: List<CourseMember> = listOf(),
 
+    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+    val materialsPosted: List<Material> = listOf(),
+
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {

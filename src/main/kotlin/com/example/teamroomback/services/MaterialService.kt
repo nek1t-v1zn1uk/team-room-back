@@ -47,10 +47,14 @@ class MaterialService(
             ))
         }
         for(tagRequest in request.tags) {
-            val tag = tagRepository.save(MaterialTag(
-                name = tagRequest.name,
-                material = material
-            ))
+            if(tagRepository.findMaterialTagByNameAndMaterialId(tagRequest.name, material.id!!) == null) {
+                val tag = tagRepository.save(
+                    MaterialTag(
+                        name = tagRequest.name,
+                        material = material
+                    )
+                )
+            }
         }
 
         material = materialRepository.findMaterialById(material.id!!)!!
@@ -88,10 +92,14 @@ class MaterialService(
         }
         tagRepository.deleteMaterialTagsByMaterialId(materialId)
         for(tagRequest in request.tags) {
-            val tag = tagRepository.save(MaterialTag(
-                name = tagRequest.name,
-                material = material
-            ))
+            if(tagRepository.findMaterialTagByNameAndMaterialId(tagRequest.name, materialId) == null) {
+                val tag = tagRepository.save(
+                    MaterialTag(
+                        name = tagRequest.name,
+                        material = material
+                    )
+                )
+            }
         }
 
         material = materialRepository.findMaterialById(material.id!!)!!
@@ -123,12 +131,14 @@ class MaterialService(
         request.tags?.let {
             tagRepository.deleteMaterialTagsByMaterialId(materialId)
             for (tagRequest in it) {
-                val tag = tagRepository.save(
-                    MaterialTag(
-                        name = tagRequest.name,
-                        material = material
+                if(tagRepository.findMaterialTagByNameAndMaterialId(tagRequest.name, materialId) == null) {
+                    val tag = tagRepository.save(
+                        MaterialTag(
+                            name = tagRequest.name,
+                            material = material
+                        )
                     )
-                )
+                }
             }
         }
 
@@ -181,6 +191,9 @@ class MaterialService(
         val material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
 
+        if(tagRepository.findMaterialTagByNameAndMaterialId(request.name, materialId) != null)
+            throw IllegalArgumentException("Tag with name \"${request.name}\" already exists")
+
         val tag = tagRepository.save(MaterialTag(
             name = request.name,
             material = material
@@ -189,8 +202,8 @@ class MaterialService(
         return tag
     }
 
-    fun deleteTag(tagName: String): MaterialTag {
-        val tag = tagRepository.findMaterialTagByName(tagName)
+    fun deleteTag(tagName: String, materialId: Long): MaterialTag {
+        val tag = tagRepository.findMaterialTagByNameAndMaterialId(tagName, materialId)
             ?: throw InstanceNotFoundException("Tag with name \"${tagName}\" not found")
 
         tagRepository.delete(tag)

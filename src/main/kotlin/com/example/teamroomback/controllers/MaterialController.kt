@@ -375,6 +375,12 @@ class MaterialController (
                     message = "Tag added successfully",
                 )
             )
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Tag adding failed: ${e.message}.",
+                )
+            )
         } catch (e: InstanceNotFoundException) {
             ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 SimpleMessageResponse(

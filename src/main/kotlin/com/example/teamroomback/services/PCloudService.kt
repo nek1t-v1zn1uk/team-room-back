@@ -23,6 +23,7 @@ class PCloudService {
     private val paths = mutableMapOf(
         "profile-photo" to "/profile_photos",
         "course-photo" to "/course_photos",
+        "material-file" to "/material_files",
     )
 
     fun getUploadLink(purpose: String): String{

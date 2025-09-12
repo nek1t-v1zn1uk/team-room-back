@@ -9,14 +9,20 @@ data class MaterialDTO(
     val topic: String,
     val textContent: String? = null,
     val createdAt: LocalDateTime,
-    val tags: List<String> = listOf(),
+    val tags: List<TagDTO> = listOf(),
     val media: List<MediaDTO> = listOf(),
+    val authorUsername: String,
 )
 data class MediaDTO(
     val id: Long,
     val name: String? = null,
     val fileUrl: String,
 )
+data class TagDTO(
+    @field:Size(max = 20, message = "Name must be up to 20 characters")
+    val name: String
+)
+
 data class MediaRequest(
     @field:Size(max = 255, message = "Name must be up to 255 characters")
     val name: String? = null,
@@ -29,7 +35,7 @@ data class CreateMaterialRequest(
     @field:Size(max = 100, message = "Topic must be up to 100 characters")
     val topic: String,
     val textContent: String? = null,
-    val tags: List<String> = listOf(),
+    val tags: List<TagDTO> = listOf(),
     val media: List<MediaRequest> = listOf(),
 )
 data class CreateMaterialResponse(
@@ -42,7 +48,7 @@ data class PutMaterialRequest(
     @field:Size(max = 100, message = "Topic must be up to 100 characters")
     val topic: String,
     val textContent: String? = null,
-    val tags: List<String> = listOf(),
+    val tags: List<TagDTO> = listOf(),
     val media: List<MediaRequest> = listOf(),
 )
 data class PutMaterialResponse(
@@ -54,7 +60,7 @@ data class PatchMaterialRequest(
     @field:Size(max = 100, message = "Topic must be up to 100 characters")
     val topic: String? = null,
     val textContent: String? = null,
-    val tags: List<String>? = null,
+    val tags: List<TagDTO>? = null,
     val media: List<MediaRequest>? = null,
 )
 data class PatchMaterialResponse(

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface MaterialMediaRepository : JpaRepository<MaterialMedia, Long> {
+    fun findMaterialMediaById(id: Long): MaterialMedia?
     @Modifying
     @Transactional
     fun deleteMaterialMediasByMaterialId(id: Long): Int

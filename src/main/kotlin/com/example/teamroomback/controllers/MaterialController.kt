@@ -1,8 +1,11 @@
 package com.example.teamroomback.controllers
 
+import com.example.teamroomback.dtos.AddMediaRequest
+import com.example.teamroomback.dtos.AddMediaResponse
 import com.example.teamroomback.dtos.CreateMaterialRequest
 import com.example.teamroomback.dtos.CreateMaterialResponse
 import com.example.teamroomback.dtos.DeleteMaterialResponse
+import com.example.teamroomback.dtos.DeleteMediaResponse
 import com.example.teamroomback.dtos.MaterialDTO
 import com.example.teamroomback.dtos.MediaDTO
 import com.example.teamroomback.dtos.PatchMaterialRequest
@@ -35,6 +38,7 @@ import javax.management.InstanceNotFoundException
 class MaterialController (
     private val materialService: MaterialService,
 ) {
+
     @PostMapping
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
@@ -67,6 +71,7 @@ class MaterialController (
             )
         }
     }
+
     @GetMapping("/{materialId}")
     @PreAuthorize("hasPermission(#id, 'VIEWER')")
     fun getMaterial(@PathVariable id: Long, @PathVariable materialId: Long): ResponseEntity<Any> {
@@ -104,6 +109,7 @@ class MaterialController (
             )
         }
     }
+
     @GetMapping
     @PreAuthorize("hasPermission(#id, 'VIEWER')")
     fun getCourseMaterials(@PathVariable id: Long): ResponseEntity<Any> {
@@ -137,6 +143,7 @@ class MaterialController (
             )
         }
     }
+
     @PutMapping("/{materialId}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
@@ -174,6 +181,7 @@ class MaterialController (
             )
         }
     }
+
     @PatchMapping("/{materialId}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
@@ -211,6 +219,7 @@ class MaterialController (
             )
         }
     }
+
     @DeleteMapping("/{materialId}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
@@ -240,16 +249,70 @@ class MaterialController (
             )
         }
     }
+
     @PostMapping("/{materialId}/media")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
-    fun addMedia(@PathVariable id: Long, @PathVariable materialId: Long){
+    fun addMedia(
+        @PathVariable id: Long, @PathVariable materialId: Long,
+        @Valid @RequestBody request: AddMediaRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val authentication = SecurityContextHolder.getContext().authentication
 
+            val media = materialService.addMedia(materialId, request)
+
+            ResponseEntity.ok(
+                AddMediaResponse(
+                    id = media.id!!,
+                    materialId = materialId,
+                    message = "Media created successfully",
+                )
+            )
+        } catch (e: InstanceNotFoundException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Media creation failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Media creation failed: ${e.message}.",
+                )
+            )
+        }
     }
-    @DeleteMapping("/{materialId}/media")
+    @DeleteMapping("/{materialId}/media/{mediaId}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
-    fun deleteMedia(@PathVariable id: Long, @PathVariable materialId: Long){
+    fun deleteMedia(
+        @PathVariable id: Long, @PathVariable materialId: Long, @PathVariable mediaId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val authentication = SecurityContextHolder.getContext().authentication
 
+            val media = materialService.deleteMedia(mediaId)
+
+            ResponseEntity.ok(
+                DeleteMediaResponse(
+                    id = media.id!!,
+                    materialId = materialId,
+                    message = "Media deleted successfully",
+                )
+            )
+        } catch (e: InstanceNotFoundException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Media deletion failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Media deletion failed: ${e.message}.",
+                )
+            )
+        }
     }
 }

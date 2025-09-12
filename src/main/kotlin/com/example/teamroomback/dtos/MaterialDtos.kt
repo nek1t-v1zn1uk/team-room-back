@@ -81,10 +81,12 @@ data class AddMediaRequest(
 )
 data class AddMediaResponse(
     val id: Long,
+    val materialId: Long,
     val message: String,
 )
 
 data class DeleteMediaResponse(
     val id: Long,
+    val materialId: Long,
     val message: String,
 )

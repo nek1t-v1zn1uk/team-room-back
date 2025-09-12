@@ -1,5 +1,6 @@
 package com.example.teamroomback.services
 
+import com.example.teamroomback.dtos.AddMediaRequest
 import com.example.teamroomback.dtos.CreateMaterialRequest
 import com.example.teamroomback.dtos.PatchMaterialRequest
 import com.example.teamroomback.dtos.PutMaterialRequest
@@ -137,7 +138,29 @@ class MaterialService(
     fun deleteMaterial(materialId: Long): Material {
         val material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
-        materialRepository.deleteMaterialById(materialId)
+        materialRepository.delete(material)
         return material
     }
+
+
+    fun addMedia(materialId: Long, request: AddMediaRequest): MaterialMedia {
+        val material = materialRepository.findMaterialById(materialId)
+            ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
+        val media = mediaRepository.save(MaterialMedia(
+            name = request.name,
+            fileUrl = request.fileUrl,
+            material = material
+        ))
+
+        return media
+    }
+
+    fun deleteMedia(mediaId: Long): MaterialMedia {
+        val media = mediaRepository.findMaterialMediaById(mediaId)
+            ?: throw InstanceNotFoundException("Media with id \"${mediaId}\" not found")
+
+        mediaRepository.delete(media)
+        return media
+    }
+
 }

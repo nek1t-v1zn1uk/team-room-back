@@ -1,6 +1,7 @@
 package com.example.teamroomback.services
 
 import com.example.teamroomback.dtos.AddMediaRequest
+import com.example.teamroomback.dtos.AddTagRequest
 import com.example.teamroomback.dtos.CreateMaterialRequest
 import com.example.teamroomback.dtos.PatchMaterialRequest
 import com.example.teamroomback.dtos.PutMaterialRequest
@@ -173,6 +174,28 @@ class MaterialService(
 
         mediaRepository.delete(media)
         return media
+    }
+
+
+    fun addTag(materialId: Long, request: AddTagRequest): MaterialTag {
+        val material = materialRepository.findMaterialById(materialId)
+            ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
+
+        val tag = tagRepository.save(MaterialTag(
+            name = request.name,
+            material = material
+        ))
+
+        return tag
+    }
+
+    fun deleteTag(tagName: String): MaterialTag {
+        val tag = tagRepository.findMaterialTagByName(tagName)
+            ?: throw InstanceNotFoundException("Tag with name \"${tagName}\" not found")
+
+        tagRepository.delete(tag)
+
+        return tag
     }
 
 }

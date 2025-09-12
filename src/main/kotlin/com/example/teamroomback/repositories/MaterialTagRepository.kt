@@ -9,6 +9,8 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface MaterialTagRepository : JpaRepository<MaterialTag, Long> {
+    fun findMaterialTagById(id: Long): MaterialTag?
+    fun findMaterialTagByName(name: String): MaterialTag?
     @Modifying
     @Transactional
     fun deleteMaterialTagsByMaterialId(id: Long): Int

@@ -19,6 +19,7 @@ data class MediaDTO(
     val fileUrl: String,
 )
 data class TagDTO(
+    @field:NotBlank(message = "Name cannot be empty")
     @field:Size(max = 20, message = "Name must be up to 20 characters")
     val name: String
 )
@@ -26,12 +27,12 @@ data class TagDTO(
 data class MediaRequest(
     @field:Size(max = 255, message = "Name must be up to 255 characters")
     val name: String? = null,
-    @NotBlank(message = "File url cannot be empty")
+    @field:NotBlank(message = "File url cannot be empty")
     val fileUrl: String,
 )
 
 data class CreateMaterialRequest(
-    @NotBlank(message = "Topic cannot be empty")
+    @field:NotBlank(message = "Topic cannot be empty")
     @field:Size(max = 100, message = "Topic must be up to 100 characters")
     val topic: String,
     val textContent: String? = null,
@@ -44,7 +45,7 @@ data class CreateMaterialResponse(
 )
 
 data class PutMaterialRequest(
-    @NotBlank(message = "Topic cannot be empty")
+    @field:NotBlank(message = "Topic cannot be empty")
     @field:Size(max = 100, message = "Topic must be up to 100 characters")
     val topic: String,
     val textContent: String? = null,
@@ -76,7 +77,7 @@ data class DeleteMaterialResponse(
 data class AddMediaRequest(
     @field:Size(max = 255, message = "Name must be up to 255 characters")
     val name: String? = null,
-    @NotBlank(message = "File url cannot be empty")
+    @field:NotBlank(message = "File url cannot be empty")
     val fileUrl: String,
 )
 data class AddMediaResponse(
@@ -97,6 +98,24 @@ data class RenameMediaResponse(
 
 data class DeleteMediaResponse(
     val id: Long,
+    val materialId: Long,
+    val message: String,
+)
+
+
+data class AddTagRequest(
+    @field:NotBlank(message = "Name cannot be empty")
+    @field:Size(max = 20, message = "Name must be up to 20 characters")
+    val name: String
+)
+data class AddTagResponse(
+    val name: String,
+    val materialId: Long,
+    val message: String,
+)
+
+data class DeleteTagResponse(
+    val name: String,
     val materialId: Long,
     val message: String,
 )

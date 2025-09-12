@@ -2,10 +2,13 @@ package com.example.teamroomback.controllers
 
 import com.example.teamroomback.dtos.AddMediaRequest
 import com.example.teamroomback.dtos.AddMediaResponse
+import com.example.teamroomback.dtos.AddTagRequest
+import com.example.teamroomback.dtos.AddTagResponse
 import com.example.teamroomback.dtos.CreateMaterialRequest
 import com.example.teamroomback.dtos.CreateMaterialResponse
 import com.example.teamroomback.dtos.DeleteMaterialResponse
 import com.example.teamroomback.dtos.DeleteMediaResponse
+import com.example.teamroomback.dtos.DeleteTagResponse
 import com.example.teamroomback.dtos.MaterialDTO
 import com.example.teamroomback.dtos.MediaDTO
 import com.example.teamroomback.dtos.PatchMaterialRequest
@@ -347,6 +350,75 @@ class MaterialController (
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 SimpleMessageResponse(
                     message = "Media deletion failed: ${e.message}.",
+                )
+            )
+        }
+    }
+
+
+    @PostMapping("/{materialId}/tags")
+    @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @CourseOpenStatus
+    fun addTag(
+        @PathVariable id: Long, @PathVariable materialId: Long,
+        @Valid @RequestBody request: AddTagRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val authentication = SecurityContextHolder.getContext().authentication
+
+            val tag = materialService.addTag(materialId, request)
+
+            ResponseEntity.ok(
+                AddTagResponse(
+                    name = tag.name,
+                    materialId = materialId,
+                    message = "Tag added successfully",
+                )
+            )
+        } catch (e: InstanceNotFoundException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Tag adding failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Tag adding failed: ${e.message}.",
+                )
+            )
+        }
+    }
+
+
+    @DeleteMapping("/{materialId}/tags/{tagName}")
+    @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @CourseOpenStatus
+    fun deleteTag(
+        @PathVariable id: Long, @PathVariable materialId: Long, @PathVariable tagName: String
+    ): ResponseEntity<Any> {
+        return try {
+            val authentication = SecurityContextHolder.getContext().authentication
+
+            val tag = materialService.deleteTag(tagName)
+
+            ResponseEntity.ok(
+                DeleteTagResponse(
+                    name = tag.name,
+                    materialId = materialId,
+                    message = "Tag deleted successfully",
+                )
+            )
+        } catch (e: InstanceNotFoundException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Tag deletion failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Tag deletion failed: ${e.message}.",
                 )
             )
         }

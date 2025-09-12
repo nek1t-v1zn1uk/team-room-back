@@ -291,6 +291,8 @@ class MaterialController (
     }
 
     @PatchMapping("/{materialId}/media/{mediaId}")
+    @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @CourseOpenStatus
     fun renameMedia(
         @PathVariable id: Long, @PathVariable materialId: Long, @PathVariable mediaId: Long,
         @Valid @RequestBody request: RenameMediaRequest

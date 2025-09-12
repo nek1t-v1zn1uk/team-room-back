@@ -406,7 +406,7 @@ class MaterialController (
         return try {
             val authentication = SecurityContextHolder.getContext().authentication
 
-            val tag = materialService.deleteTag(tagName)
+            val tag = materialService.deleteTag(tagName, materialId)
 
             ResponseEntity.ok(
                 DeleteTagResponse(

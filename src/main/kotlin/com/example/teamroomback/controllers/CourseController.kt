@@ -103,7 +103,7 @@ class CourseController(
             ResponseEntity.ok(
                 PutCourseResponse(
                     courseId = newCourse.id!!,
-                    message = "Course updated successfully"
+                    message = "Course put successfully"
                 )
             )
         } catch (e: Exception){
@@ -126,7 +126,7 @@ class CourseController(
             ResponseEntity.ok(
                 PatchCourseResponse(
                     courseId = newCourse.id!!,
-                    message = "Course updated successfully"
+                    message = "Course patched successfully"
                 )
             )
         } catch (e: Exception){

@@ -1,6 +1,8 @@
 package com.example.teamroomback.services
 
 import com.example.teamroomback.dtos.CreateMaterialRequest
+import com.example.teamroomback.dtos.PatchMaterialRequest
+import com.example.teamroomback.dtos.PutMaterialRequest
 import com.example.teamroomback.entities.Material
 import com.example.teamroomback.entities.MaterialMedia
 import com.example.teamroomback.entities.MaterialTag
@@ -62,6 +64,74 @@ class MaterialService(
     fun getCourseMaterials(courseId: Long): List<Material> {
         val materials = materialRepository.findMaterialsByCourseId(courseId)
         return materials
+    }
+
+    fun putMaterial(username: String, courseId: Long, materialId: Long, request: PutMaterialRequest): Material {
+        var material = materialRepository.findMaterialById(materialId)
+            ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
+
+        material.topic = request.topic
+        material.textContent = request.textContent
+
+        material = materialRepository.save(material)
+
+        mediaRepository.deleteMaterialMediasByMaterialId(materialId)
+        for(mediaRequest in request.media) {
+            val media = mediaRepository.save(MaterialMedia(
+                name = mediaRequest.name,
+                fileUrl = mediaRequest.fileUrl,
+                material = material
+            ))
+        }
+        tagRepository.deleteMaterialTagsByMaterialId(materialId)
+        for(tagRequest in request.tags) {
+            val tag = tagRepository.save(MaterialTag(
+                name = tagRequest.name,
+                material = material
+            ))
+        }
+
+        material = materialRepository.findMaterialById(material.id!!)!!
+
+        return material
+    }
+
+    fun patchMaterial(username: String, courseId: Long, materialId: Long, request: PatchMaterialRequest): Material {
+        var material = materialRepository.findMaterialById(materialId)
+            ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
+
+        request.topic?.let { material.topic = it }
+        request.textContent?.let { material.textContent = it }
+
+        material = materialRepository.save(material)
+
+        request.media?.let {
+            mediaRepository.deleteMaterialMediasByMaterialId(materialId)
+            for (mediaRequest in it) {
+                val media = mediaRepository.save(
+                    MaterialMedia(
+                        name = mediaRequest.name,
+                        fileUrl = mediaRequest.fileUrl,
+                        material = material
+                    )
+                )
+            }
+        }
+        request.tags?.let {
+            tagRepository.deleteMaterialTagsByMaterialId(materialId)
+            for (tagRequest in it) {
+                val tag = tagRepository.save(
+                    MaterialTag(
+                        name = tagRequest.name,
+                        material = material
+                    )
+                )
+            }
+        }
+
+        material = materialRepository.findMaterialById(material.id!!)!!
+
+        return material
     }
 
     fun deleteMaterial(materialId: Long): Material {

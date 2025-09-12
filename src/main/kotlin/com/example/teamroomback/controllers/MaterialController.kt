@@ -5,6 +5,10 @@ import com.example.teamroomback.dtos.CreateMaterialResponse
 import com.example.teamroomback.dtos.DeleteMaterialResponse
 import com.example.teamroomback.dtos.MaterialDTO
 import com.example.teamroomback.dtos.MediaDTO
+import com.example.teamroomback.dtos.PatchMaterialRequest
+import com.example.teamroomback.dtos.PatchMaterialResponse
+import com.example.teamroomback.dtos.PutMaterialRequest
+import com.example.teamroomback.dtos.PutMaterialResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.TagDTO
 import com.example.teamroomback.entities.Material
@@ -109,13 +113,15 @@ class MaterialController (
             val materials = materialService.getCourseMaterials(id)
 
             ResponseEntity.ok(
-                materials.map { material -> MaterialDTO(
-                    id = material.id!!,
-                    topic = material.topic,
-                    textContent = material.textContent,
-                    createdAt = material.createdAt,
-                    authorUsername = material.author.username,
-                ) }
+                mapOf("materials" to
+                    materials.map { material -> MaterialDTO(
+                        id = material.id!!,
+                        topic = material.topic,
+                        textContent = material.textContent,
+                        createdAt = material.createdAt,
+                        authorUsername = material.author.username,
+                    ) }
+                )
             )
         } catch (e: InstanceNotFoundException) {
             ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
@@ -134,14 +140,76 @@ class MaterialController (
     @PutMapping("/{materialId}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
-    fun putMaterial(@PathVariable id: Long, @PathVariable materialId: Long){
+    fun putMaterial(
+        @PathVariable id: Long, @PathVariable materialId: Long,
+        @Valid @RequestBody request: PutMaterialRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val authentication = SecurityContextHolder.getContext().authentication
 
+            val material = materialService.putMaterial(
+                authentication.name,
+                id,
+                materialId,
+                request
+            )
+
+            ResponseEntity.ok(
+                PutMaterialResponse(
+                    id = material.id!!,
+                    message = "Material put successfully",
+                )
+            )
+        } catch (e: InstanceNotFoundException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Material putting failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Material putting failed: ${e.message}.",
+                )
+            )
+        }
     }
     @PatchMapping("/{materialId}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
-    fun patchMaterial(@PathVariable id: Long, @PathVariable materialId: Long){
+    fun patchMaterial(
+        @PathVariable id: Long, @PathVariable materialId: Long,
+        @Valid @RequestBody request: PatchMaterialRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val authentication = SecurityContextHolder.getContext().authentication
 
+            val material = materialService.patchMaterial(
+                authentication.name,
+                id,
+                materialId,
+                request
+            )
+
+            ResponseEntity.ok(
+                PatchMaterialResponse(
+                    id = material.id!!,
+                    message = "Material patched successfully",
+                )
+            )
+        } catch (e: InstanceNotFoundException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Material patching failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception) {
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Material patching failed: ${e.message}.",
+                )
+            )
+        }
     }
     @DeleteMapping("/{materialId}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")

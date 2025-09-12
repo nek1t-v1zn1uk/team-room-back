@@ -4,6 +4,7 @@ import com.example.teamroomback.dtos.AddMediaRequest
 import com.example.teamroomback.dtos.CreateMaterialRequest
 import com.example.teamroomback.dtos.PatchMaterialRequest
 import com.example.teamroomback.dtos.PutMaterialRequest
+import com.example.teamroomback.dtos.RenameMediaRequest
 import com.example.teamroomback.entities.Material
 import com.example.teamroomback.entities.MaterialMedia
 import com.example.teamroomback.entities.MaterialTag
@@ -151,6 +152,17 @@ class MaterialService(
             fileUrl = request.fileUrl,
             material = material
         ))
+
+        return media
+    }
+
+    fun renameMedia(mediaId: Long, request: RenameMediaRequest): MaterialMedia {
+        var media = mediaRepository.findMaterialMediaById(mediaId)
+            ?: throw InstanceNotFoundException("Media with id \"${mediaId}\" not found")
+
+        media.name = request.name
+
+        media = mediaRepository.save(media)
 
         return media
     }

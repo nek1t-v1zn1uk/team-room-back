@@ -74,12 +74,22 @@ data class DeleteMaterialResponse(
 )
 
 data class AddMediaRequest(
-    @field:Size(max = 255, message = "Topic must be up to 255 characters")
+    @field:Size(max = 255, message = "Name must be up to 255 characters")
     val name: String? = null,
     @NotBlank(message = "File url cannot be empty")
     val fileUrl: String,
 )
 data class AddMediaResponse(
+    val id: Long,
+    val materialId: Long,
+    val message: String,
+)
+
+data class RenameMediaRequest(
+    @field:Size(max = 255, message = "Name must be up to 255 characters")
+    val name: String? = null
+)
+data class RenameMediaResponse(
     val id: Long,
     val materialId: Long,
     val message: String,

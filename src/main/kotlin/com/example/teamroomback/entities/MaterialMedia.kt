@@ -18,7 +18,7 @@ class MaterialMedia (
     val id: Long? = null,
 
     @Column(name = "name")
-    val name: String? = null,
+    var name: String? = null,
 
     @Column(name = "file_url", nullable = false)
     val fileUrl: String,

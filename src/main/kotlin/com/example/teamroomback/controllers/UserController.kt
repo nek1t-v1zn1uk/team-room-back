@@ -2,6 +2,7 @@ package com.example.teamroomback.controllers
 
 import com.example.teamroomback.dtos.ChatMessageResponse
 import com.example.teamroomback.dtos.CreateRoomResponse
+import com.example.teamroomback.dtos.ErrorResponse
 import com.example.teamroomback.dtos.GetProfileResponse
 import com.example.teamroomback.dtos.JoinRoomRequest
 import com.example.teamroomback.dtos.JoinRoomResponse
@@ -12,6 +13,12 @@ import com.example.teamroomback.dtos.WebSocketMessageType
 import com.example.teamroomback.services.MessageService
 import com.example.teamroomback.services.RoomService
 import com.example.teamroomback.services.UserService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.messaging.handler.annotation.MessageMapping
@@ -24,6 +31,8 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
+@Tag(name = "Користувач", description = "Операції, пов'язані з поточним аутентифікованим користувачем.")
+@SecurityRequirement(name = "bearerAuth")
 class UserController(
     private val simpMessagingTemplate: SimpMessagingTemplate,
     private val userService: UserService,
@@ -32,8 +41,32 @@ class UserController(
 ) {
 
     @DeleteMapping("/api/user")
+    @Operation(
+        summary = "Видалити поточного користувача.",
+        description = "Видаляє профіль, дані та всі пов'язані записи для аутентифікованого користувача. Ця дія є незворотною.",
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Користувача успішно видалено.",
+        content = [Content(schema = Schema(implementation = SimpleMessageResponse::class))]
+    )
+    @ApiResponse(
+        responseCode = "401",
+        description = "Неавторизований. Потрібно надати дійсний JWT токен.",
+        content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+    )
+    @ApiResponse(
+        responseCode = "403",
+        description = "Доступ заборонено. Недостатньо прав для виконання операції.",
+        content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+    )
+    @ApiResponse(
+        responseCode = "500",
+        description = "Внутрішня помилка сервера.",
+        content = [Content(schema = Schema(implementation = ErrorResponse::class))]
+    )
     fun deleteUser(): ResponseEntity<Any> {
-        return try{
+        return try {
             val authentication = SecurityContextHolder.getContext().authentication
             userService.deleteUser(authentication.name)
 

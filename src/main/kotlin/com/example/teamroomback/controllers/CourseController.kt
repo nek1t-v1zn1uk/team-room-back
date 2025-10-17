@@ -8,6 +8,7 @@ import com.example.teamroomback.dtos.CreateCourseRequest
 import com.example.teamroomback.dtos.CreateCourseResponse
 import com.example.teamroomback.dtos.DeleteCourseMemberResponse
 import com.example.teamroomback.dtos.DeleteCourseResponse
+import com.example.teamroomback.dtos.ErrorResponse
 import com.example.teamroomback.dtos.PatchCourseRequest
 import com.example.teamroomback.dtos.PatchCourseResponse
 import com.example.teamroomback.dtos.PutCourseMemberRoleRequest
@@ -18,6 +19,13 @@ import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.UserCoursesResponse
 import com.example.teamroomback.services.CourseService
 import com.example.teamroomback.validation.CourseOpenStatus
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -37,11 +45,18 @@ import javax.management.InstanceNotFoundException
 
 @RestController
 @RequestMapping("/api/course")
+@Tag(name = "Курси", description = "Ендпоїнти для керування курсами та їх учасниками.")
+@SecurityRequirement(name = "bearerAuth")
 class CourseController(
     private val courseService: CourseService,
 ) {
 
     @PostMapping
+    @Operation(summary = "Створити новий курс.", description = "Створює новий курс і автоматично робить поточного користувача його власником (OWNER).")
+    @ApiResponse(responseCode = "200", description = "Курс успішно створено.", content = [Content(schema = Schema(implementation = CreateCourseResponse::class))])
+    @ApiResponse(responseCode = "400", description = "Помилка валідації даних.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
     fun createCourse(@Valid @RequestBody request: CreateCourseRequest): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
@@ -63,7 +78,13 @@ class CourseController(
 
     @GetMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'VIEWER')")
-    fun getCourse(@PathVariable id: Long): ResponseEntity<Any> {
+    @Operation(summary = "Отримати інформацію про курс.", description = "Повертає деталі курсу, включаючи список учасників. Потребує ролі не нижче VIEWER.")
+    @ApiResponse(responseCode = "200", description = "Дані курсу успішно отримано.", content = [Content(schema = Schema(implementation = CourseDTO::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено (недостатньо прав).", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Курс не знайдено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    fun getCourse(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long): ResponseEntity<Any> {
         return try {
 
             val course = courseService.getCourseById(id)
@@ -94,8 +115,15 @@ class CourseController(
 
     @PutMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @Operation(summary = "Повністю оновити курс.", description = "Замінює дані курсу на нові. Потребує ролі не нижче PROFESSOR.")
+    @ApiResponse(responseCode = "200", description = "Курс успішно оновлено.", content = [Content(schema = Schema(implementation = PutCourseResponse::class))])
+    @ApiResponse(responseCode = "400", description = "Помилка валідації.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Курс не знайдено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
     @CourseOpenStatus
-    fun putCourse(@PathVariable id: Long, @Valid @RequestBody request: PutCourseRequest): ResponseEntity<Any> {
+    fun putCourse(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long, @Valid @RequestBody request: PutCourseRequest): ResponseEntity<Any> {
         return try {
 
             val newCourse = courseService.putCourse(id, request)
@@ -117,8 +145,15 @@ class CourseController(
 
     @PatchMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @Operation(summary = "Частково оновити курс.", description = "Оновлює лише передані поля курсу. Потребує ролі не нижче PROFESSOR.")
+    @ApiResponse(responseCode = "200", description = "Курс успішно оновлено.", content = [Content(schema = Schema(implementation = PatchCourseResponse::class))])
+    @ApiResponse(responseCode = "400", description = "Помилка валідації.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Курс не знайдено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
     @CourseOpenStatus
-    fun patchCourse(@PathVariable id: Long, @Valid @RequestBody request: PatchCourseRequest): ResponseEntity<Any> {
+    fun patchCourse(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long, @Valid @RequestBody request: PatchCourseRequest): ResponseEntity<Any> {
         return try {
 
             val newCourse = courseService.patchCourse(id, request)
@@ -140,7 +175,13 @@ class CourseController(
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'OWNER')")
-    fun deleteCourse(@PathVariable id: Long): ResponseEntity<Any> {
+    @Operation(summary = "Видалити курс.", description = "Повністю видаляє курс та всі пов'язані з ним дані. Потребує ролі OWNER.")
+    @ApiResponse(responseCode = "200", description = "Курс успішно видалено.", content = [Content(schema = Schema(implementation = DeleteCourseResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Курс не знайдено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    fun deleteCourse(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long): ResponseEntity<Any> {
         return try {
 
             courseService.deleteCourse(id)
@@ -163,7 +204,13 @@ class CourseController(
     @PostMapping("/{id}/open")
     @PreAuthorize("hasPermission(#id, 'OWNER')")
     @CourseOpenStatus(false)
-    fun openCourse(@PathVariable id: Long): ResponseEntity<Any> {
+    @Operation(summary = "Відкрити курс.", description = "Робить курс відкритим для приєднання нових учасників. Потребує ролі OWNER. Курс повинний бути закритим.")
+    @ApiResponse(responseCode = "200", description = "Курс успішно відкрито.", content = [Content(schema = Schema(implementation = SimpleMessageResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "409", description = "Конфлікт. Курс вже відкрито.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    fun openCourse(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long): ResponseEntity<Any> {
         return try{
             courseService.openCourse(id)
 
@@ -184,7 +231,13 @@ class CourseController(
     @PostMapping("/{id}/close")
     @PreAuthorize("hasPermission(#id, 'OWNER')")
     @CourseOpenStatus
-    fun closeCourse(@PathVariable id: Long): ResponseEntity<Any> {
+    @Operation(summary = "Закрити курс.", description = "Робить курс закритим, забороняючи приєднання нових учасників. Потребує ролі OWNER. Курс повинний бути відкритим.")
+    @ApiResponse(responseCode = "200", description = "Курс успішно закрито.", content = [Content(schema = Schema(implementation = SimpleMessageResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "409", description = "Конфлікт. Курс вже закрито.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    fun closeCourse(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long): ResponseEntity<Any> {
         return try{
             courseService.closeCourse(id)
 
@@ -203,6 +256,10 @@ class CourseController(
     }
 
     @GetMapping
+    @Operation(summary = "Отримати курси поточного користувача.", description = "Повертає список всіх курсів, до яких належить аутентифікований користувач.")
+    @ApiResponse(responseCode = "200", description = "Список курсів отримано.", content = [Content(schema = Schema(implementation = UserCoursesResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
     fun findAllCourses(): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
@@ -228,7 +285,14 @@ class CourseController(
     @PostMapping("/{id}/members")
     @PreAuthorize("hasPermission(#id, 'LEADER')")
     @CourseOpenStatus
-    fun addMember(@PathVariable id: Long, @Valid @RequestBody request: AddCourseMemberRequest): ResponseEntity<Any> {
+    @Operation(summary = "Додати учасника до курсу.", description = "Додає користувача до курсу з вказаною роллю. Потребує ролі не нижче LEADER. Курс повинний бути відкритим.")
+    @ApiResponse(responseCode = "200", description = "Учасника успішно додано.", content = [Content(schema = Schema(implementation = AddCourseMemberResponse::class))])
+    @ApiResponse(responseCode = "400", description = "Помилка валідації (користувач вже в курсі / не існує).", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Курс не знайдено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    fun addMember(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long, @Valid @RequestBody request: AddCourseMemberRequest): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
 
@@ -271,7 +335,14 @@ class CourseController(
     @PutMapping("/{id}/members")
     @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
     @CourseOpenStatus
-    fun changeMemberRole(@PathVariable id: Long, @Valid @RequestBody request: PutCourseMemberRoleRequest): ResponseEntity<Any> {
+    @Operation(summary = "Змінити роль учасника.", description = "Оновлює роль існуючого учасника курсу. Потребує ролі не нижче PROFESSOR. Курс повинний бути відкритим.")
+    @ApiResponse(responseCode = "200", description = "Роль учасника змінено.", content = [Content(schema = Schema(implementation = PutCourseMemberRoleResponse::class))])
+    @ApiResponse(responseCode = "400", description = "Помилка (користувач не є учасником курсу).", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Курс не знайдено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    fun changeMemberRole(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long, @Valid @RequestBody request: PutCourseMemberRoleRequest): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
 
@@ -314,7 +385,14 @@ class CourseController(
     @DeleteMapping("/{id}/members")
     @PreAuthorize("hasPermission(#id, 'LEADER')")
     @CourseOpenStatus
-    fun deleteMember(@PathVariable id: Long, @RequestParam username: String): ResponseEntity<Any> {
+    @Operation(summary = "Видалити учасника з курсу.", description = "Видаляє вказаного користувача зі списку учасників курсу. Потребує ролі не нижче LEADER. Курс повиннйи бути відкритим")
+    @ApiResponse(responseCode = "200", description = "Учасника успішно видалено.", content = [Content(schema = Schema(implementation = DeleteCourseMemberResponse::class))])
+    @ApiResponse(responseCode = "400", description = "Помилка (користувач не є учасником курсу).", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Курс не знайдено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    fun deleteMember(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long, @Parameter(description = "Логін користувача, якого потрібно видалити.", example = "student123") @RequestParam username: String): ResponseEntity<Any> {
         return try{
             val authentication = SecurityContextHolder.getContext().authentication
 

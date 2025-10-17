@@ -10,7 +10,7 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.RUNTIME)
 @Constraint(validatedBy = [UsernameConstraintValidator::class])
 annotation class ValidUsername(
-    val message: String = "Username must not contain anys whitespaces.",
+    val message: String = "Username must not contain any whitespaces.",
     val groups: Array<KClass<*>> = [],
     val payload: Array<KClass<out Payload>> = []
 )

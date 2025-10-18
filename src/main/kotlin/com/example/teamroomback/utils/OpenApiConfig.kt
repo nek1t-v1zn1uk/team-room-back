@@ -1,37 +1,24 @@
 package com.example.teamroomback.utils
 
-import io.swagger.v3.oas.models.Components
-import io.swagger.v3.oas.models.OpenAPI
-import io.swagger.v3.oas.models.info.Info
-import io.swagger.v3.oas.models.security.SecurityRequirement
-import io.swagger.v3.oas.models.security.SecurityScheme
-import org.springframework.context.annotation.Bean
+import io.swagger.v3.oas.annotations.OpenAPIDefinition
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType
+import io.swagger.v3.oas.annotations.info.Info
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.security.SecurityScheme
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class OpenApiConfig {
-
-    @Bean
-    fun customOpenAPI(): OpenAPI {
-        val securitySchemeName = "Bearer Authentication(JWT)"
-
-        return OpenAPI()
-            .components(
-                Components().addSecuritySchemes(
-                    securitySchemeName,
-                    SecurityScheme()
-                        .name(securitySchemeName)
-                        .type(SecurityScheme.Type.HTTP)
-                        .scheme("bearer")
-                        .bearerFormat("JWT")
-                        .description("Введіть JWT токен, БЕЗ префіксу 'Bearer '")
-                )
-            )
-            .addSecurityItem(SecurityRequirement().addList(securitySchemeName))
-            .info(
-                Info()
-                    .title("TeamRoom API")
-                    .version("v1.0")
-            )
-    }
-}
+@OpenAPIDefinition(
+    info = Info(title = "TeamRoom API", version = "v1.0", description = "API документація для додатку TeamRoom."),
+    security = [SecurityRequirement(name = "bearerAuth")]
+)
+@SecurityScheme(
+    name = "bearerAuth",
+    description = "Введіть JWT токен, БЕЗ префіксу 'Bearer '",
+    scheme = "bearer",
+    type = SecuritySchemeType.HTTP,
+    bearerFormat = "JWT",
+    `in` = SecuritySchemeIn.HEADER
+)
+class OpenApiConfig

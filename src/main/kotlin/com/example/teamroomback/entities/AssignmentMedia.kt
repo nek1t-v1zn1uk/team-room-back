@@ -1,5 +1,6 @@
 package com.example.teamroomback.entities
 
+import com.example.teamroomback.dtos.AssignmentMediaDTO
 import jakarta.persistence.*
 
 @Entity
@@ -18,4 +19,12 @@ data class AssignmentMedia(
 
     @Column(name = "file_url", columnDefinition = "text")
     var fileUrl: String? = null
-)
+){
+    fun toAssignmentMediaDTO(): AssignmentMediaDTO {
+        return AssignmentMediaDTO(
+            id = this.id!!,
+            name = this.name,
+            fileUrl = this.fileUrl
+        )
+    }
+}

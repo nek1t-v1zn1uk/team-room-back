@@ -1,5 +1,7 @@
 package com.example.teamroomback.entities
 
+import com.example.teamroomback.dtos.AssignmentDTO
+import com.example.teamroomback.dtos.AssignmentShortDTO
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import java.time.LocalDateTime
@@ -40,4 +42,29 @@ data class Assignment(
 
     @OneToMany(mappedBy = "assignment", cascade = [CascadeType.ALL], orphanRemoval = true)
     val responses: List<AssignmentResponse> = listOf()
-)
+) {
+    fun toAssignmentDTO(): AssignmentDTO
+    {
+        return AssignmentDTO(
+            id = this.id!!,
+            title = this.title,
+            description = this.description,
+            maxGrade = this.maxGrade,
+            createdAt = this.createdAt!!,
+            deadline = this.deadline,
+            authorUsername = this.author.username,
+            media = this.media.map { it.toAssignmentMediaDTO() }
+        )
+    }
+
+    fun toAssignmentShortDTO(): AssignmentShortDTO {
+        return AssignmentShortDTO(
+            id = this.id!!,
+            title = this.title,
+            maxGrade = this.maxGrade,
+            createdAt = this.createdAt!!,
+            deadline = this.deadline,
+            authorUsername = this.author.username
+        )
+    }
+}

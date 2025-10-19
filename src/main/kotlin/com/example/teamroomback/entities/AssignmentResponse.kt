@@ -1,5 +1,8 @@
 package com.example.teamroomback.entities
 
+import com.example.teamroomback.dtos.AssignmentResponseDTO
+import com.example.teamroomback.dtos.AssignmentResponseMediaDTO
+import com.example.teamroomback.dtos.AssignmentResponseShortDTO
 import jakarta.persistence.*
 
 @Entity
@@ -34,4 +37,28 @@ data class AssignmentResponse(
 
     @OneToMany(mappedBy = "assignmentResponse", cascade = [CascadeType.ALL], orphanRemoval = true)
     val media: List<AssignmentResponseMedia> = listOf()
-)
+) {
+
+    fun toAssignmentResponseDTO(): AssignmentResponseDTO {
+        return AssignmentResponseDTO(
+            id = this.id!!,
+            authorUsername = this.author.username,
+            isGraded = this.isGraded,
+            grade = this.grade,
+            gradeComment = this.gradeComment,
+            isReturned = this.isReturned,
+            returnComment = this.returnComment,
+            media = this.media.map { it.toAssignmentResponseMediaDTO() }
+        )
+    }
+
+    fun toAssignmentResponseShortDTO(): AssignmentResponseShortDTO {
+        return AssignmentResponseShortDTO(
+            id = this.id!!,
+            authorUsername = this.author.username,
+            isGraded = this.isGraded,
+            grade = this.grade,
+            isReturned = this.isReturned
+        )
+    }
+}

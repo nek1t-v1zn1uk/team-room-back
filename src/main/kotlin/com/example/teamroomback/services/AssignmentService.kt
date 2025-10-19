@@ -1,16 +1,12 @@
 package com.example.teamroomback.services
 
-import com.example.teamroomback.dtos.AddAssignmentMediaRequest
-import com.example.teamroomback.dtos.CreateAssignmentRequest
-import com.example.teamroomback.dtos.PatchAssignmentRequest
-import com.example.teamroomback.dtos.PutAssignmentRequest
-import com.example.teamroomback.dtos.RenameAssignmentMediaRequest
+import com.example.teamroomback.dtos.*
 import com.example.teamroomback.entities.Assignment
 import com.example.teamroomback.entities.AssignmentMedia
-import com.example.teamroomback.repositories.AssignmentMediaRepository
-import com.example.teamroomback.repositories.AssignmentRepository
-import com.example.teamroomback.repositories.CourseRepository
-import com.example.teamroomback.repositories.UserRepository
+import com.example.teamroomback.entities.AssignmentResponse
+import com.example.teamroomback.entities.AssignmentResponseMedia
+import com.example.teamroomback.repositories.*
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import javax.management.InstanceNotFoundException
@@ -19,6 +15,8 @@ import javax.management.InstanceNotFoundException
 class AssignmentService(
     private val assignmentRepository: AssignmentRepository,
     private val assignmentMediaRepository: AssignmentMediaRepository,
+    private val assignmentResponseRepository: AssignmentResponseRepository,
+    private val assignmentResponseMediaRepository: AssignmentResponseMediaRepository,
     private val userRepository: UserRepository,
     private val courseRepository: CourseRepository
 ) {
@@ -112,5 +110,93 @@ class AssignmentService(
         val media = getMedia(mediaId)
         assignmentMediaRepository.delete(media)
         return media
+    }
+
+    // Assignment Response Methods
+
+    @Transactional
+    fun createAssignmentResponse(authorUsername: String, assignmentId: Long, request: CreateAssignmentResponseRequest): AssignmentResponse {
+        val author = userRepository.findByUsernameValue(authorUsername)
+            ?: throw InstanceNotFoundException("User with username $authorUsername not found")
+        val assignment = getAssignment(assignmentId)
+
+        val response = AssignmentResponse(
+            assignment = assignment,
+            author = author
+        )
+
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        val mediaList = request.media.map {
+            AssignmentResponseMedia(
+                assignmentResponse = savedResponse,
+                name = it.name,
+                fileUrl = it.fileUrl
+            )
+        }
+        assignmentResponseMediaRepository.saveAll(mediaList)
+
+        return savedResponse
+    }
+
+    fun getAssignmentResponses(assignmentId: Long): List<AssignmentResponse> {
+        val assignment = getAssignment(assignmentId)
+        return assignment.responses
+    }
+
+    fun getAssignmentResponse(responseId: Long): AssignmentResponse {
+        return assignmentResponseRepository.findById(responseId)
+            .orElseThrow { InstanceNotFoundException("Assignment response with id $responseId not found") }
+    }
+
+    @Transactional
+    fun deleteAssignmentResponse(responseId: Long, username: String) {
+        val response = getAssignmentResponse(responseId)
+        if (response.author.username != username) {
+            throw AccessDeniedException("You are not the author of this response.")
+        }
+        if (response.isGraded) {
+            throw IllegalStateException("Cannot delete a graded response.")
+        }
+        assignmentResponseRepository.delete(response)
+    }
+
+    @Transactional
+    fun gradeAssignmentResponse(responseId: Long, request: GradeAssignmentResponseRequest): AssignmentResponse {
+        val response = getAssignmentResponse(responseId)
+        response.isGraded = true
+        response.grade = request.grade
+        response.gradeComment = request.gradeComment
+        response.isReturned = false
+        response.returnComment = null
+        return assignmentResponseRepository.save(response)
+    }
+
+    @Transactional
+    fun returnAssignmentResponse(responseId: Long, request: ReturnAssignmentResponseRequest): AssignmentResponse {
+        val response = getAssignmentResponse(responseId)
+        if (response.isGraded) {
+            throw IllegalStateException("Cannot return a graded response. Cancel the grade first.")
+        }
+        response.isReturned = true
+        response.returnComment = request.returnComment
+        return assignmentResponseRepository.save(response)
+    }
+
+    @Transactional
+    fun cancelGradeAssignmentResponse(responseId: Long): AssignmentResponse {
+        val response = getAssignmentResponse(responseId)
+        response.isGraded = false
+        response.grade = null
+        response.gradeComment = null
+        return assignmentResponseRepository.save(response)
+    }
+
+    @Transactional
+    fun cancelReturnAssignmentResponse(responseId: Long): AssignmentResponse {
+        val response = getAssignmentResponse(responseId)
+        response.isReturned = false
+        response.returnComment = null
+        return assignmentResponseRepository.save(response)
     }
 }

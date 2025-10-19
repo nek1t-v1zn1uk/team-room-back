@@ -23,14 +23,14 @@ data class MaterialDTO(
     val tags: List<TagDTO> = listOf(),
 
     @field:Schema(description = "Список прикріплених медіафайлів.")
-    val media: List<MediaDTO> = listOf(),
+    val media: List<MaterialMediaDTO> = listOf(),
 
     @field:Schema(description = "Логін автора матеріалу.", example = "teacher_smith")
     val authorUsername: String,
 )
 
 @Schema(description = "DTO для відображення прикріпленого медіафайлу.")
-data class MediaDTO(
+data class MaterialMediaDTO(
     @field:Schema(description = "Унікальний ідентифікатор медіафайлу.", example = "12")
     val id: Long,
 

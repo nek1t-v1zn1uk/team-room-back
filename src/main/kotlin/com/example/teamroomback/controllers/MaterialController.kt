@@ -11,7 +11,7 @@ import com.example.teamroomback.dtos.DeleteMediaResponse
 import com.example.teamroomback.dtos.DeleteTagResponse
 import com.example.teamroomback.dtos.ErrorResponse
 import com.example.teamroomback.dtos.MaterialDTO
-import com.example.teamroomback.dtos.MediaDTO
+import com.example.teamroomback.dtos.MaterialMediaDTO
 import com.example.teamroomback.dtos.PatchMaterialRequest
 import com.example.teamroomback.dtos.PatchMaterialResponse
 import com.example.teamroomback.dtos.PutMaterialRequest
@@ -20,7 +20,6 @@ import com.example.teamroomback.dtos.RenameMediaRequest
 import com.example.teamroomback.dtos.RenameMediaResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.TagDTO
-import com.example.teamroomback.entities.Material
 import com.example.teamroomback.services.MaterialService
 import com.example.teamroomback.validation.CourseOpenStatus
 import io.swagger.v3.oas.annotations.Operation
@@ -119,7 +118,7 @@ class MaterialController (
                     textContent = material.textContent,
                     createdAt = material.createdAt,
                     tags = material.tags.map { tag -> TagDTO(tag.name) },
-                    media = material.media.map { media -> MediaDTO(
+                    media = material.media.map { media -> MaterialMediaDTO(
                         id = media.id!!,
                         name = media.name,
                         fileUrl = media.fileUrl,

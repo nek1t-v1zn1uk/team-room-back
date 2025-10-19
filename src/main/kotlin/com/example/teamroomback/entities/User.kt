@@ -36,6 +36,12 @@ data class User(
     @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
     val materialsPosted: List<Material> = listOf(),
 
+    @OneToMany(mappedBy = "author", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val createdAssignments: List<Assignment> = listOf(),
+
+    @OneToMany(mappedBy = "author", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val assignmentResponses: List<AssignmentResponse> = listOf(),
+
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {

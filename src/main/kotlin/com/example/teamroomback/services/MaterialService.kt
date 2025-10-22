@@ -197,6 +197,10 @@ class MaterialService(
 
         media = mediaRepository.save(media)
 
+        for(member in media.material.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialUpdate(member, media.material)
+        }
+
         return media
     }
 
@@ -226,6 +230,10 @@ class MaterialService(
             material = material
         ))
 
+        for(member in material.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialUpdate(member, material)
+        }
+
         return tag
     }
 
@@ -234,6 +242,10 @@ class MaterialService(
             ?: throw InstanceNotFoundException("Tag with name \"${tagName}\" not found")
 
         tagRepository.delete(tag)
+
+        for(member in tag.material.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialUpdate(member, tag.material)
+        }
 
         return tag
     }

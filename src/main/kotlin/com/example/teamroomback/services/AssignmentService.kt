@@ -5,6 +5,7 @@ import com.example.teamroomback.entities.Assignment
 import com.example.teamroomback.entities.AssignmentMedia
 import com.example.teamroomback.entities.AssignmentResponse
 import com.example.teamroomback.entities.AssignmentResponseMedia
+import com.example.teamroomback.entities.CourseMemberRole
 import com.example.teamroomback.repositories.*
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
@@ -177,6 +178,12 @@ class AssignmentService(
         }
         assignmentResponseMediaRepository.saveAll(mediaList)
 
+        for(member in assignment.course.courseMembers.filter {
+            it.user.username == authorUsername || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseCreation(member.user.username, savedResponse)
+        }
+
         return savedResponse
     }
 
@@ -200,6 +207,12 @@ class AssignmentService(
             throw IllegalStateException("Cannot delete a graded response.")
         }
         assignmentResponseRepository.delete(response)
+
+        for(member in response.assignment.course.courseMembers.filter {
+            it.user.username == response.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseDeletion(member.user.username, response)
+        }
     }
 
     @Transactional
@@ -210,7 +223,15 @@ class AssignmentService(
         response.gradeComment = request.gradeComment
         response.isReturned = false
         response.returnComment = null
-        return assignmentResponseRepository.save(response)
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        for(member in savedResponse.assignment.course.courseMembers.filter {
+            it.user.username == savedResponse.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseUpdate(member.user.username, savedResponse)
+        }
+
+        return savedResponse
     }
 
     @Transactional
@@ -221,7 +242,15 @@ class AssignmentService(
         }
         response.isReturned = true
         response.returnComment = request.returnComment
-        return assignmentResponseRepository.save(response)
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        for(member in savedResponse.assignment.course.courseMembers.filter {
+            it.user.username == savedResponse.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseUpdate(member.user.username, savedResponse)
+        }
+
+        return savedResponse
     }
 
     @Transactional
@@ -230,7 +259,15 @@ class AssignmentService(
         response.isGraded = false
         response.grade = null
         response.gradeComment = null
-        return assignmentResponseRepository.save(response)
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        for(member in savedResponse.assignment.course.courseMembers.filter {
+            it.user.username == savedResponse.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseUpdate(member.user.username, savedResponse)
+        }
+
+        return savedResponse
     }
 
     @Transactional
@@ -238,6 +275,14 @@ class AssignmentService(
         val response = getAssignmentResponse(responseId)
         response.isReturned = false
         response.returnComment = null
-        return assignmentResponseRepository.save(response)
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        for(member in savedResponse.assignment.course.courseMembers.filter {
+            it.user.username == savedResponse.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseUpdate(member.user.username, savedResponse)
+        }
+
+        return savedResponse
     }
 }

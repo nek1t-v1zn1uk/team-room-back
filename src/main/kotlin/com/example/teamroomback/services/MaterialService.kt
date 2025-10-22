@@ -24,7 +24,8 @@ class MaterialService(
     private val courseRepository: CourseRepository,
     private val userRepository: UserRepository,
     private val mediaRepository: MaterialMediaRepository,
-    private val tagRepository: MaterialTagRepository
+    private val tagRepository: MaterialTagRepository,
+    private val webSocketNotificationService: WebSocketNotificationService
 ) {
     fun createMaterial(username: String, courseId: Long, request: CreateMaterialRequest): Material {
         val course = courseRepository.findCourseById(courseId)
@@ -58,6 +59,10 @@ class MaterialService(
         }
 
         material = materialRepository.findMaterialById(material.id!!)!!
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialCreation(member, material)
+        }
 
         return material
     }
@@ -104,6 +109,10 @@ class MaterialService(
 
         material = materialRepository.findMaterialById(material.id!!)!!
 
+        for(member in material.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialUpdate(member, material)
+        }
+
         return material
     }
 
@@ -144,6 +153,10 @@ class MaterialService(
 
         material = materialRepository.findMaterialById(material.id!!)!!
 
+        for(member in material.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialUpdate(member, material)
+        }
+
         return material
     }
 
@@ -151,6 +164,11 @@ class MaterialService(
         val material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
         materialRepository.delete(material)
+
+        for(member in material.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialDeletion(member, material)
+        }
+
         return material
     }
 
@@ -163,6 +181,10 @@ class MaterialService(
             fileUrl = request.fileUrl,
             material = material
         ))
+
+        for(member in material.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialUpdate(member, material)
+        }
 
         return media
     }
@@ -183,6 +205,11 @@ class MaterialService(
             ?: throw InstanceNotFoundException("Media with id \"${mediaId}\" not found")
 
         mediaRepository.delete(media)
+
+        for(member in media.material.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutMaterialUpdate(member, media.material)
+        }
+
         return media
     }
 

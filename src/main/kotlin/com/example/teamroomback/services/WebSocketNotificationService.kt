@@ -3,16 +3,16 @@ package com.example.teamroomback.services
 import com.example.teamroomback.dtos.WebSocketBroadcast
 import com.example.teamroomback.dtos.WebSocketMessageType
 import com.example.teamroomback.entities.CourseMember
+import com.example.teamroomback.entities.Material
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 
 @Service
 class WebSocketNotificationService(
     private val simpMessagingTemplate: SimpMessagingTemplate,
-    private val userService: UserService
 ) {
 
-    private fun sentAsUserNotification(username: String, payload: WebSocketBroadcast) {
+    private fun sendAsUserNotification(username: String, payload: WebSocketBroadcast) {
         simpMessagingTemplate.convertAndSendToUser(username, "/queue/notifications", payload)
     }
 
@@ -27,7 +27,7 @@ class WebSocketNotificationService(
                 "joined_at" to member.createdAt
             )
         )
-        sentAsUserNotification(member.user.username, message)
+        sendAsUserNotification(member.user.username, message)
     }
 
     fun notifyUserAboutRemovalFromCourse(member: CourseMember) {
@@ -39,7 +39,7 @@ class WebSocketNotificationService(
                 "course_photoUrl" to member.course.photoUrl,
             )
         )
-        sentAsUserNotification(member.user.username, message)
+        sendAsUserNotification(member.user.username, message)
     }
 
     fun notifyUserAboutRoleChangeInCourse(member: CourseMember, oldRole: String) {
@@ -53,7 +53,7 @@ class WebSocketNotificationService(
                 "new_role" to member.role,
             )
         )
-        sentAsUserNotification(member.user.username, message)
+        sendAsUserNotification(member.user.username, message)
     }
 
     fun notifyUserAboutCourseDeletion(member: CourseMember) {
@@ -66,7 +66,53 @@ class WebSocketNotificationService(
                 "role" to member.role,
             )
         )
-        sentAsUserNotification(member.user.username, message)
+        sendAsUserNotification(member.user.username, message)
+    }
+
+    fun notifyUserAboutMaterialCreation(member: CourseMember, material: Material) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.MATERIAL_CREATED,
+            payload = mapOf(
+                "course_id" to member.course.id,
+                "course_name" to member.course.name,
+                "course_photoUrl" to member.course.photoUrl,
+                "material_id" to material.id,
+                "material_topic" to material.topic,
+                "author_username" to material.author.username,
+                "author_first_name" to material.author.profile!!.firstName,
+                "author_last_name" to material.author.profile!!.lastName,
+                "author_photo_url" to material.author.profile!!.photoUrl,
+            )
+        )
+        sendAsUserNotification(member.user.username, message)
+    }
+
+    fun notifyUserAboutMaterialUpdate(member: CourseMember, material: Material) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.MATERIAL_UPDATED,
+            payload = mapOf(
+                "course_id" to member.course.id,
+                "course_name" to member.course.name,
+                "course_photoUrl" to member.course.photoUrl,
+                "material_id" to material.id,
+                "material_topic" to material.topic,
+            )
+        )
+        sendAsUserNotification(member.user.username, message)
+    }
+
+    fun notifyUserAboutMaterialDeletion(member: CourseMember, material: Material) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.MATERIAL_DELETED,
+            payload = mapOf(
+                "course_id" to member.course.id,
+                "course_name" to member.course.name,
+                "course_photoUrl" to member.course.photoUrl,
+                "material_id" to material.id,
+                "material_topic" to material.topic,
+            )
+        )
+        sendAsUserNotification(member.user.username, message)
     }
 
 }

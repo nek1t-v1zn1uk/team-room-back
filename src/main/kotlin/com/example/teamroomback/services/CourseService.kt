@@ -57,7 +57,13 @@ class CourseService(
         course.name = request.name
         course.photoUrl = request.photoUrl
 
-        return courseRepository.save(course)
+        val newCourse = courseRepository.save(course)
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
+
+        return newCourse
     }
 
     fun patchCourse(courseId: Long, request: PatchCourseRequest): Course {
@@ -65,7 +71,13 @@ class CourseService(
         request.name?.let { course.name = it }
         request.photoUrl?.let { course.photoUrl = it }
 
-        return courseRepository.save(course)
+        val newCourse = courseRepository.save(course)
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
+
+        return newCourse
     }
 
     fun openCourse(courseId: Long) {
@@ -73,6 +85,10 @@ class CourseService(
             ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
         course.isOpen = true
         courseRepository.save(course)
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
     }
 
     fun closeCourse(courseId: Long) {
@@ -80,6 +96,10 @@ class CourseService(
             ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
         course.isOpen = false
         courseRepository.save(course)
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
     }
 
     fun deleteCourse(courseId: Long) {
@@ -133,6 +153,10 @@ class CourseService(
         )
 
         webSocketNotificationService.notifyUserAboutJoiningToCourse(courseMember)
+        for(member in courseMember.course.courseMembers) {
+            if(member.id != courseMember.id)
+                webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
 
         return courseMember
     }
@@ -158,7 +182,13 @@ class CourseService(
         val oldRole = changingCourseMember.role
         changingCourseMember.role = request.role
         val newMember = courseMemberRepository.save(changingCourseMember)
+
         webSocketNotificationService.notifyUserAboutRoleChangeInCourse(newMember, oldRole.name)
+        for(member in newMember.course.courseMembers) {
+            if(member.id != newMember.id)
+                webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
+
         return newMember
     }
 
@@ -174,6 +204,10 @@ class CourseService(
         courseMemberRepository.delete(member)
 
         webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
+        for(m in member.course.courseMembers) {
+            if(m.id != member.id)
+                webSocketNotificationService.notifyUserAboutCourseUpdate(m)
+        }
     }
 
 }

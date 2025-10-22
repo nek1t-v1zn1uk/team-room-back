@@ -13,10 +13,13 @@ enum class WebSocketMessageType {
     JOINED_TO_COURSE,
     REMOVED_FROM_COURSE,
     ROLE_CHANGED_IN_COURSE,
+    COURSE_UPDATED,
     COURSE_DELETED,
 
     MATERIAL_CREATED,
-    MATERIAL_UPDATED, //info, tags, media
+    MATERIAL_UPDATED, // material, media, tags
     MATERIAL_DELETED,
+
+
 
 }

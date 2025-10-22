@@ -56,6 +56,18 @@ class WebSocketNotificationService(
         sendAsUserNotification(member.user.username, message)
     }
 
+    fun notifyUserAboutCourseUpdate(member: CourseMember) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.COURSE_UPDATED,
+            payload = mapOf(
+                "course_id" to member.course.id,
+                "course_name" to member.course.name,
+                "course_photoUrl" to member.course.photoUrl,
+            )
+        )
+        sendAsUserNotification(member.user.username, message)
+    }
+
     fun notifyUserAboutCourseDeletion(member: CourseMember) {
         val message = WebSocketBroadcast(
             type = WebSocketMessageType.COURSE_DELETED,
@@ -68,6 +80,7 @@ class WebSocketNotificationService(
         )
         sendAsUserNotification(member.user.username, message)
     }
+
 
     fun notifyUserAboutMaterialCreation(member: CourseMember, material: Material) {
         val message = WebSocketBroadcast(

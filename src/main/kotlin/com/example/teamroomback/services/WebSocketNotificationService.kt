@@ -2,6 +2,7 @@ package com.example.teamroomback.services
 
 import com.example.teamroomback.dtos.WebSocketBroadcast
 import com.example.teamroomback.dtos.WebSocketMessageType
+import com.example.teamroomback.entities.Assignment
 import com.example.teamroomback.entities.CourseMember
 import com.example.teamroomback.entities.Material
 import org.springframework.messaging.simp.SimpMessagingTemplate
@@ -75,7 +76,6 @@ class WebSocketNotificationService(
                 "course_id" to member.course.id,
                 "course_name" to member.course.name,
                 "course_photoUrl" to member.course.photoUrl,
-                "role" to member.role,
             )
         )
         sendAsUserNotification(member.user.username, message)
@@ -127,5 +127,53 @@ class WebSocketNotificationService(
         )
         sendAsUserNotification(member.user.username, message)
     }
+
+
+    fun notifyUserAboutAssignmentCreation(username: String, assignment: Assignment) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.ASSIGNMENT_CREATED,
+            payload = mapOf(
+                "course_id" to assignment.course.id,
+                "course_name" to assignment.course.name,
+                "course_photoUrl" to assignment.course.photoUrl,
+                "assignment_id" to assignment.id,
+                "assignment_title" to assignment.title,
+                "author_username" to assignment.author.username,
+                "author_first_name" to assignment.author.profile!!.firstName,
+                "author_last_name" to assignment.author.profile!!.lastName,
+                "author_photo_url" to assignment.author.profile!!.photoUrl,
+            )
+        )
+        sendAsUserNotification(username, message)
+    }
+
+    fun notifyUserAboutAssignmentUpdate(username: String, assignment: Assignment) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.ASSIGNMENT_UPDATED,
+            payload = mapOf(
+                "course_id" to assignment.course.id,
+                "course_name" to assignment.course.name,
+                "course_photoUrl" to assignment.course.photoUrl,
+                "assignment_id" to assignment.id,
+                "assignment_title" to assignment.title
+            )
+        )
+        sendAsUserNotification(username, message)
+    }
+
+    fun notifyUserAboutAssignmentDeletion(username: String, assignment: Assignment) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.ASSIGNMENT_DELETED,
+            payload = mapOf(
+                "course_id" to assignment.course.id,
+                "course_name" to assignment.course.name,
+                "course_photoUrl" to assignment.course.photoUrl,
+                "assignment_id" to assignment.id,
+                "assignment_title" to assignment.title
+            )
+        )
+        sendAsUserNotification(username, message)
+    }
+
 
 }

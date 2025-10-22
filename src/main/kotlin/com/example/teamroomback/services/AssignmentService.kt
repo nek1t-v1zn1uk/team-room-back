@@ -18,7 +18,8 @@ class AssignmentService(
     private val assignmentResponseRepository: AssignmentResponseRepository,
     private val assignmentResponseMediaRepository: AssignmentResponseMediaRepository,
     private val userRepository: UserRepository,
-    private val courseRepository: CourseRepository
+    private val courseRepository: CourseRepository,
+    private val webSocketNotificationService: WebSocketNotificationService
 ) {
 
     @Transactional
@@ -28,15 +29,20 @@ class AssignmentService(
         val course = courseRepository.findCourseById(courseId)
             ?: throw InstanceNotFoundException("Course with id $courseId not found")
 
-        val assignment = Assignment(
+        val assignment = assignmentRepository.save(Assignment(
             course = course,
             author = author,
             title = request.title,
             description = request.description,
             maxGrade = request.maxGrade,
             deadline = request.deadline
-        )
-        return assignmentRepository.save(assignment)
+        ))
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentCreation(member.user.username, assignment)
+        }
+
+        return assignment
     }
 
     fun getCourseAssignments(courseId: Long): List<Assignment> {
@@ -60,7 +66,13 @@ class AssignmentService(
         assignment.maxGrade = request.maxGrade
         assignment.deadline = request.deadline
 
-        return assignmentRepository.save(assignment)
+        val newAssignment = assignmentRepository.save(assignment)
+
+        for(member in newAssignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newAssignment)
+        }
+
+        return newAssignment
     }
 
     @Transactional
@@ -72,13 +84,24 @@ class AssignmentService(
         request.maxGrade?.let { assignment.maxGrade = it }
         request.deadline?.let { assignment.deadline = it }
 
-        return assignmentRepository.save(assignment)
+        val newAssignment = assignmentRepository.save(assignment)
+
+        for(member in newAssignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newAssignment)
+        }
+
+        return newAssignment
     }
 
     @Transactional
     fun deleteAssignment(assignmentId: Long): Assignment {
         val assignment = getAssignment(assignmentId)
         assignmentRepository.delete(assignment)
+
+        for(member in assignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentDeletion(member.user.username, assignment)
+        }
+
         return assignment
     }
 
@@ -90,7 +113,14 @@ class AssignmentService(
             name = request.name,
             fileUrl = request.fileUrl
         )
-        return assignmentMediaRepository.save(media)
+
+        val newMedia = assignmentMediaRepository.save(media)
+
+        for(member in assignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, assignment)
+        }
+
+        return newMedia
     }
 
     private fun getMedia(mediaId: Long): AssignmentMedia {
@@ -102,17 +132,28 @@ class AssignmentService(
     fun renameMedia(mediaId: Long, request: RenameAssignmentMediaRequest): AssignmentMedia {
         val media = getMedia(mediaId)
         media.name = request.name
-        return assignmentMediaRepository.save(media)
+
+        val newMedia = assignmentMediaRepository.save(media)
+
+        for(member in newMedia.assignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newMedia.assignment)
+        }
+
+        return newMedia
     }
 
     @Transactional
     fun deleteMedia(mediaId: Long): AssignmentMedia {
         val media = getMedia(mediaId)
         assignmentMediaRepository.delete(media)
+
+        for(member in media.assignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, media.assignment)
+        }
+
         return media
     }
 
-    // Assignment Response Methods
 
     @Transactional
     fun createAssignmentResponse(authorUsername: String, assignmentId: Long, request: CreateAssignmentResponseRequest): AssignmentResponse {

@@ -20,6 +20,10 @@ enum class WebSocketMessageType {
     MATERIAL_UPDATED, // material, media, tags
     MATERIAL_DELETED,
 
+    ASSIGNMENT_CREATED,
+    ASSIGNMENT_UPDATED,
+    ASSIGNMENT_DELETED,
+
 
 
 }

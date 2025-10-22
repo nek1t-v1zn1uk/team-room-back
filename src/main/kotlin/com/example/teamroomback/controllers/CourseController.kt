@@ -18,6 +18,7 @@ import com.example.teamroomback.dtos.PutCourseResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.UserCoursesResponse
 import com.example.teamroomback.services.CourseService
+import com.example.teamroomback.services.WebSocketNotificationService
 import com.example.teamroomback.validation.CourseOpenStatus
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter

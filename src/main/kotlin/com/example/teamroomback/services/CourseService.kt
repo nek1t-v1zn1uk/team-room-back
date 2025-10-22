@@ -11,12 +11,7 @@ import com.example.teamroomback.entities.CourseMemberRole
 import com.example.teamroomback.repositories.CourseMemberRepository
 import com.example.teamroomback.repositories.CourseRepository
 import com.example.teamroomback.repositories.UserRepository
-import jakarta.transaction.Transactional
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.server.MethodNotAllowedException
 import javax.management.InstanceNotFoundException
 
 @Service
@@ -24,7 +19,8 @@ class CourseService(
     private val courseRepository: CourseRepository,
     private val courseMemberRepository: CourseMemberRepository,
     private val userRepository: UserRepository,
-    private val profileService: ProfileService
+    private val profileService: ProfileService,
+    private val webSocketNotificationService: WebSocketNotificationService
 ) {
 
     fun getRoleInCourse(username: String, courseId: Long): CourseMemberRole? {
@@ -87,7 +83,15 @@ class CourseService(
     }
 
     fun deleteCourse(courseId: Long) {
+        val course = courseRepository.findCourseById(courseId)
+
         courseRepository.deleteById(courseId)
+
+        if(course != null) {
+            for(member in course.courseMembers) {
+                webSocketNotificationService.notifyUserAboutCourseDeletion(member)
+            }
+        }
     }
 
     fun getUserCourses(username: String): List<Course> {
@@ -127,6 +131,9 @@ class CourseService(
                 role = request.role,
             )
         )
+
+        webSocketNotificationService.notifyUserAboutJoiningToCourse(courseMember)
+
         return courseMember
     }
 
@@ -148,9 +155,11 @@ class CourseService(
         if (!currentMember.role.canManage(changingCourseMember.role))
             throw IllegalAccessException("You dont have permission to change member with role \"${request.role}\"")
 
-
+        val oldRole = changingCourseMember.role
         changingCourseMember.role = request.role
-        return courseMemberRepository.save(changingCourseMember)
+        val newMember = courseMemberRepository.save(changingCourseMember)
+        webSocketNotificationService.notifyUserAboutRoleChangeInCourse(newMember, oldRole.name)
+        return newMember
     }
 
     fun deleteCourseMember(adminUsername: String, courseId: Long, memberUsername: String) {
@@ -163,6 +172,8 @@ class CourseService(
             throw IllegalAccessException("You dont have permission to delete member with role \"${member.role}\"")
 
         courseMemberRepository.delete(member)
+
+        webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
     }
 
 }

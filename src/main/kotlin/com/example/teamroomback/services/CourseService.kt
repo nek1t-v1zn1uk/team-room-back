@@ -11,12 +11,7 @@ import com.example.teamroomback.entities.CourseMemberRole
 import com.example.teamroomback.repositories.CourseMemberRepository
 import com.example.teamroomback.repositories.CourseRepository
 import com.example.teamroomback.repositories.UserRepository
-import jakarta.transaction.Transactional
-import org.springframework.http.ResponseEntity
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.server.MethodNotAllowedException
 import javax.management.InstanceNotFoundException
 
 @Service
@@ -24,7 +19,8 @@ class CourseService(
     private val courseRepository: CourseRepository,
     private val courseMemberRepository: CourseMemberRepository,
     private val userRepository: UserRepository,
-    private val profileService: ProfileService
+    private val profileService: ProfileService,
+    private val webSocketNotificationService: WebSocketNotificationService
 ) {
 
     fun getRoleInCourse(username: String, courseId: Long): CourseMemberRole? {
@@ -61,7 +57,13 @@ class CourseService(
         course.name = request.name
         course.photoUrl = request.photoUrl
 
-        return courseRepository.save(course)
+        val newCourse = courseRepository.save(course)
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
+
+        return newCourse
     }
 
     fun patchCourse(courseId: Long, request: PatchCourseRequest): Course {
@@ -69,7 +71,13 @@ class CourseService(
         request.name?.let { course.name = it }
         request.photoUrl?.let { course.photoUrl = it }
 
-        return courseRepository.save(course)
+        val newCourse = courseRepository.save(course)
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
+
+        return newCourse
     }
 
     fun openCourse(courseId: Long) {
@@ -77,6 +85,10 @@ class CourseService(
             ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
         course.isOpen = true
         courseRepository.save(course)
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
     }
 
     fun closeCourse(courseId: Long) {
@@ -84,10 +96,22 @@ class CourseService(
             ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
         course.isOpen = false
         courseRepository.save(course)
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
     }
 
     fun deleteCourse(courseId: Long) {
+        val course = courseRepository.findCourseById(courseId)
+
         courseRepository.deleteById(courseId)
+
+        if(course != null) {
+            for(member in course.courseMembers) {
+                webSocketNotificationService.notifyUserAboutCourseDeletion(member)
+            }
+        }
     }
 
     fun getUserCourses(username: String): List<Course> {
@@ -127,6 +151,13 @@ class CourseService(
                 role = request.role,
             )
         )
+
+        webSocketNotificationService.notifyUserAboutJoiningToCourse(courseMember)
+        for(member in courseMember.course.courseMembers) {
+            if(member.id != courseMember.id)
+                webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
+
         return courseMember
     }
 
@@ -148,9 +179,17 @@ class CourseService(
         if (!currentMember.role.canManage(changingCourseMember.role))
             throw IllegalAccessException("You dont have permission to change member with role \"${request.role}\"")
 
-
+        val oldRole = changingCourseMember.role
         changingCourseMember.role = request.role
-        return courseMemberRepository.save(changingCourseMember)
+        val newMember = courseMemberRepository.save(changingCourseMember)
+
+        webSocketNotificationService.notifyUserAboutRoleChangeInCourse(newMember, oldRole.name)
+        for(member in newMember.course.courseMembers) {
+            if(member.id != newMember.id)
+                webSocketNotificationService.notifyUserAboutCourseUpdate(member)
+        }
+
+        return newMember
     }
 
     fun deleteCourseMember(adminUsername: String, courseId: Long, memberUsername: String) {
@@ -163,6 +202,12 @@ class CourseService(
             throw IllegalAccessException("You dont have permission to delete member with role \"${member.role}\"")
 
         courseMemberRepository.delete(member)
+
+        webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
+        for(m in member.course.courseMembers) {
+            if(m.id != member.id)
+                webSocketNotificationService.notifyUserAboutCourseUpdate(m)
+        }
     }
 
 }

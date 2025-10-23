@@ -5,6 +5,7 @@ import com.example.teamroomback.entities.Assignment
 import com.example.teamroomback.entities.AssignmentMedia
 import com.example.teamroomback.entities.AssignmentResponse
 import com.example.teamroomback.entities.AssignmentResponseMedia
+import com.example.teamroomback.entities.CourseMemberRole
 import com.example.teamroomback.repositories.*
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
@@ -18,7 +19,8 @@ class AssignmentService(
     private val assignmentResponseRepository: AssignmentResponseRepository,
     private val assignmentResponseMediaRepository: AssignmentResponseMediaRepository,
     private val userRepository: UserRepository,
-    private val courseRepository: CourseRepository
+    private val courseRepository: CourseRepository,
+    private val webSocketNotificationService: WebSocketNotificationService
 ) {
 
     @Transactional
@@ -28,15 +30,20 @@ class AssignmentService(
         val course = courseRepository.findCourseById(courseId)
             ?: throw InstanceNotFoundException("Course with id $courseId not found")
 
-        val assignment = Assignment(
+        val assignment = assignmentRepository.save(Assignment(
             course = course,
             author = author,
             title = request.title,
             description = request.description,
             maxGrade = request.maxGrade,
             deadline = request.deadline
-        )
-        return assignmentRepository.save(assignment)
+        ))
+
+        for(member in course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentCreation(member.user.username, assignment)
+        }
+
+        return assignment
     }
 
     fun getCourseAssignments(courseId: Long): List<Assignment> {
@@ -60,7 +67,13 @@ class AssignmentService(
         assignment.maxGrade = request.maxGrade
         assignment.deadline = request.deadline
 
-        return assignmentRepository.save(assignment)
+        val newAssignment = assignmentRepository.save(assignment)
+
+        for(member in newAssignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newAssignment)
+        }
+
+        return newAssignment
     }
 
     @Transactional
@@ -72,13 +85,24 @@ class AssignmentService(
         request.maxGrade?.let { assignment.maxGrade = it }
         request.deadline?.let { assignment.deadline = it }
 
-        return assignmentRepository.save(assignment)
+        val newAssignment = assignmentRepository.save(assignment)
+
+        for(member in newAssignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newAssignment)
+        }
+
+        return newAssignment
     }
 
     @Transactional
     fun deleteAssignment(assignmentId: Long): Assignment {
         val assignment = getAssignment(assignmentId)
         assignmentRepository.delete(assignment)
+
+        for(member in assignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentDeletion(member.user.username, assignment)
+        }
+
         return assignment
     }
 
@@ -90,7 +114,14 @@ class AssignmentService(
             name = request.name,
             fileUrl = request.fileUrl
         )
-        return assignmentMediaRepository.save(media)
+
+        val newMedia = assignmentMediaRepository.save(media)
+
+        for(member in assignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, assignment)
+        }
+
+        return newMedia
     }
 
     private fun getMedia(mediaId: Long): AssignmentMedia {
@@ -102,17 +133,28 @@ class AssignmentService(
     fun renameMedia(mediaId: Long, request: RenameAssignmentMediaRequest): AssignmentMedia {
         val media = getMedia(mediaId)
         media.name = request.name
-        return assignmentMediaRepository.save(media)
+
+        val newMedia = assignmentMediaRepository.save(media)
+
+        for(member in newMedia.assignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newMedia.assignment)
+        }
+
+        return newMedia
     }
 
     @Transactional
     fun deleteMedia(mediaId: Long): AssignmentMedia {
         val media = getMedia(mediaId)
         assignmentMediaRepository.delete(media)
+
+        for(member in media.assignment.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, media.assignment)
+        }
+
         return media
     }
 
-    // Assignment Response Methods
 
     @Transactional
     fun createAssignmentResponse(authorUsername: String, assignmentId: Long, request: CreateAssignmentResponseRequest): AssignmentResponse {
@@ -135,6 +177,12 @@ class AssignmentService(
             )
         }
         assignmentResponseMediaRepository.saveAll(mediaList)
+
+        for(member in assignment.course.courseMembers.filter {
+            it.user.username == authorUsername || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseCreation(member.user.username, savedResponse)
+        }
 
         return savedResponse
     }
@@ -159,6 +207,12 @@ class AssignmentService(
             throw IllegalStateException("Cannot delete a graded response.")
         }
         assignmentResponseRepository.delete(response)
+
+        for(member in response.assignment.course.courseMembers.filter {
+            it.user.username == response.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseDeletion(member.user.username, response)
+        }
     }
 
     @Transactional
@@ -169,7 +223,15 @@ class AssignmentService(
         response.gradeComment = request.gradeComment
         response.isReturned = false
         response.returnComment = null
-        return assignmentResponseRepository.save(response)
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        for(member in savedResponse.assignment.course.courseMembers.filter {
+            it.user.username == savedResponse.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseUpdate(member.user.username, savedResponse)
+        }
+
+        return savedResponse
     }
 
     @Transactional
@@ -180,7 +242,15 @@ class AssignmentService(
         }
         response.isReturned = true
         response.returnComment = request.returnComment
-        return assignmentResponseRepository.save(response)
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        for(member in savedResponse.assignment.course.courseMembers.filter {
+            it.user.username == savedResponse.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseUpdate(member.user.username, savedResponse)
+        }
+
+        return savedResponse
     }
 
     @Transactional
@@ -189,7 +259,15 @@ class AssignmentService(
         response.isGraded = false
         response.grade = null
         response.gradeComment = null
-        return assignmentResponseRepository.save(response)
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        for(member in savedResponse.assignment.course.courseMembers.filter {
+            it.user.username == savedResponse.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseUpdate(member.user.username, savedResponse)
+        }
+
+        return savedResponse
     }
 
     @Transactional
@@ -197,6 +275,14 @@ class AssignmentService(
         val response = getAssignmentResponse(responseId)
         response.isReturned = false
         response.returnComment = null
-        return assignmentResponseRepository.save(response)
+        val savedResponse = assignmentResponseRepository.save(response)
+
+        for(member in savedResponse.assignment.course.courseMembers.filter {
+            it.user.username == savedResponse.author.username || it.role.isAtLeast(CourseMemberRole.PROFESSOR)
+        }) {
+            webSocketNotificationService.notifyUserAboutAssignmentResponseUpdate(member.user.username, savedResponse)
+        }
+
+        return savedResponse
     }
 }

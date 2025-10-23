@@ -131,7 +131,7 @@ data class PutCourseMemberRoleRequest(
     @field:Size(min = 4, max = 32, message = "Username must be 4 to 32 characters long")
     val username: String,
 
-    @field:Schema(description = "Нова роль для користувача.", example = "ASSISTANT", requiredMode = Schema.RequiredMode.REQUIRED)
+    @field:Schema(description = "Нова роль для користувача.", example = "STUDENT", requiredMode = Schema.RequiredMode.REQUIRED)
     val role: CourseMemberRole,
 )
 
@@ -139,7 +139,7 @@ data class PutCourseMemberRoleResponse(
     @field:Schema(description = "Логін користувача, чию роль змінили.", example = "student123")
     val username: String,
 
-    @field:Schema(description = "Нова роль користувача.", example = "ASSISTANT")
+    @field:Schema(description = "Нова роль користувача.", example = "STUDENT")
     val newRole: CourseMemberRole,
 
     @field:Schema(description = "Повідомлення про результат.", example = "Роль користувача було успішно оновлено.")

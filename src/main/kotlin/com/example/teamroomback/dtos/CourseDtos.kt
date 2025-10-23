@@ -20,6 +20,9 @@ data class CourseDTO(
     @field:Schema(description = "Прапорець, що вказує, чи є курс відкритим.", example = "true")
     val isOpen: Boolean,
 
+    @field:Schema(description = "К-сть учасників курсу.")
+    val membersCount: Int,
+
     @field:Schema(description = "Список учасників курсу.")
     val members: List<CourseMemberDTO> = listOf(),
 )

@@ -79,7 +79,7 @@ class CourseController(
 
     @GetMapping("/{id}")
     @PreAuthorize("hasPermission(#id, 'VIEWER')")
-    @Operation(summary = "Отримати інформацію про курс.", description = "Повертає деталі курсу, включаючи список учасників. Потребує ролі не нижче VIEWER.")
+    @Operation(summary = "Отримати інформацію про курс. (Є ЗМІНИ!)", description = "Повертає деталі курсу, включаючи список учасників. Потребує ролі не нижче VIEWER.<br>!!!Зміни:\n 1) Добавив поле для виведення к-сті користувачів;")
     @ApiResponse(responseCode = "200", description = "Дані курсу успішно отримано.", content = [Content(schema = Schema(implementation = CourseDTO::class))])
     @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
     @ApiResponse(responseCode = "403", description = "Доступ заборонено (недостатньо прав).", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
@@ -96,6 +96,7 @@ class CourseController(
                     name= course.name,
                     photoUrl = course.photoUrl,
                     isOpen = course.isOpen,
+                    membersCount = course.courseMembers.size,
                     members = course.courseMembers.map {
                         CourseMemberDTO(
                             username = it.user.username,
@@ -257,7 +258,7 @@ class CourseController(
     }
 
     @GetMapping
-    @Operation(summary = "Отримати курси поточного користувача.", description = "Повертає список всіх курсів, до яких належить аутентифікований користувач.")
+    @Operation(summary = "Отримати курси поточного користувача, але без учасників(завжди пустий список). (Є ЗМІНИ!)", description = "Повертає список всіх курсів, до яких належить аутентифікований користувач.<br>!!!Зміни:\n 1) Добавив поле для виведення к-сті користувачів;")
     @ApiResponse(responseCode = "200", description = "Список курсів отримано.", content = [Content(schema = Schema(implementation = UserCoursesResponse::class))])
     @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
     @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
@@ -266,7 +267,7 @@ class CourseController(
             val authentication = SecurityContextHolder.getContext().authentication
 
             val courses = courseService.getUserCourses(authentication.name)
-                .map{ CourseDTO(id = it.id!!, name = it.name, photoUrl = it.photoUrl, isOpen = it.isOpen) }
+                .map{ CourseDTO(id = it.id!!, name = it.name, photoUrl = it.photoUrl, isOpen = it.isOpen, membersCount = it.courseMembers.size) }
 
             ResponseEntity.ok(
                 UserCoursesResponse(
@@ -421,6 +422,49 @@ class CourseController(
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 SimpleMessageResponse(
                     message = "Member deletion failed: ${e.message}.",
+                )
+            )
+        }
+    }
+
+    @DeleteMapping("/{id}/leave")
+    @PreAuthorize("hasPermission(#id, 'VIEWER')")
+    @CourseOpenStatus
+    @Operation(summary = "Покинути курс.", description = "Покинути курс. Потребує ролі не нижче VIEWER. Курс повиннйи бути відкритим")
+    @ApiResponse(responseCode = "200", description = "Учасника успішно видалено.", content = [Content(schema = Schema(implementation = DeleteCourseMemberResponse::class))])
+    @ApiResponse(responseCode = "400", description = "Помилка (користувач не є учасником курсу).", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "404", description = "Курс не знайдено.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    @ApiResponse(responseCode = "500", description = "Внутрішня помилка сервера.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
+    fun deleteMemberMyself(@Parameter(description = "ID курсу.", example = "101") @PathVariable id: Long): ResponseEntity<Any> {
+        return try{
+            val authentication = SecurityContextHolder.getContext().authentication
+
+            courseService.leaveCourseByMember(authentication.name, id)
+
+            ResponseEntity.ok(
+                DeleteCourseMemberResponse(
+                    username = authentication.name,
+                    message = "Member left successfully",
+                )
+            )
+        } catch (e: InstanceNotFoundException){
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Member leaving failed: ${e.message}.",
+                )
+            )
+        } catch (e: IllegalAccessException){
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                SimpleMessageResponse(
+                    message = "Member leaving failed: ${e.message}.",
+                )
+            )
+        } catch (e: Exception){
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                SimpleMessageResponse(
+                    message = "Member leaving failed: ${e.message}.",
                 )
             )
         }

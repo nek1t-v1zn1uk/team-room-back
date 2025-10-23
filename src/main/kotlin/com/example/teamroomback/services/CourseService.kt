@@ -210,4 +210,17 @@ class CourseService(
         }
     }
 
+    fun leaveCourseByMember(username: String, courseId: Long) {
+        val member =  courseMemberRepository.findByUserUsernameValueAndCourseId(username, courseId)
+        ?: throw InstanceNotFoundException("User with username \"$username\" is not a member of course with id \"${courseId}\"")
+
+        courseMemberRepository.delete(member)
+
+        webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
+        for(m in member.course.courseMembers) {
+            if(m.id != member.id)
+                webSocketNotificationService.notifyUserAboutCourseUpdate(m)
+        }
+    }
+
 }

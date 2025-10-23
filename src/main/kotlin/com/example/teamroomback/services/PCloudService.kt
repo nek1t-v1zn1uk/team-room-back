@@ -24,6 +24,8 @@ class PCloudService {
         "profile-photo" to "/profile_photos",
         "course-photo" to "/course_photos",
         "material-file" to "/material_files",
+        "assignment-file" to "/assignment_files",
+        "assignment-response-file" to "/assignment_response_files",
     )
 
     fun getUploadLink(purpose: String): String{

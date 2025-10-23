@@ -3,7 +3,6 @@ package com.example.teamroomback.services
 import com.example.teamroomback.entities.User
 import com.example.teamroomback.repositories.ProfileRepository
 import com.example.teamroomback.repositories.UserRepository
-import org.springframework.http.ResponseEntity
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
@@ -58,6 +57,10 @@ class UserService(
 
     fun hasProfile(username: String): Boolean {
         return profileRepository.findByUserUsernameValue(username) != null
+    }
+
+    fun finUsersByPartialUsername(partialUsername: String): List<User> {
+        return userRepository.findByUsernameValueContainingIgnoreCase(partialUsername).filter { it.profile != null }
     }
 
 }

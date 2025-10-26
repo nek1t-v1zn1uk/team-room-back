@@ -36,6 +36,15 @@ data class User(
     @OneToMany(mappedBy = "author", cascade = [CascadeType.ALL], orphanRemoval = true)
     val assignmentResponses: List<AssignmentResponse> = listOf(),
 
+    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val chatMemberships: List<ChatMember> = listOf(),
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    val chatMessages: List<ChatMessage> = listOf(),
+
+    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val messageReactions: List<MessageReaction> = listOf(),
+
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {

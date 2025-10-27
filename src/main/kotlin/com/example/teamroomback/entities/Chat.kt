@@ -53,5 +53,9 @@ enum class ChatMemberRole {
     ADMIN,
     MODERATOR,
     MEMBER,
-    VIEWER
+    VIEWER;
+
+    fun isAtLeast(role: ChatMemberRole): Boolean {
+        return this.ordinal <= role.ordinal
+    }
 }

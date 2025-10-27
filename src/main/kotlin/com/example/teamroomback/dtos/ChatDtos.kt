@@ -12,6 +12,12 @@ data class ChatMemberDTO(
     val role: ChatMemberRole
 )
 
+data class ChatMemberDetailsDTO(
+    val username: String,
+    val role: ChatMemberRole,
+    val joinedAt: LocalDateTime?
+)
+
 data class CurrentUserChatInfoDTO(
     val role: ChatMemberRole,
     val joinedAt: LocalDateTime?,
@@ -55,6 +61,16 @@ data class PatchChatRequest(
     @field:Size(min = 1, max = 255, message = "Chat name must be between 1 and 255 characters")
     val name: String?,
     val photoUrl: String?
+)
+
+data class AddChatMemberRequest(
+    @field:NotBlank(message = "Username cannot be blank")
+    val username: String,
+    val role: ChatMemberRole = ChatMemberRole.MEMBER
+)
+
+data class UpdateChatMemberRoleRequest(
+    val role: ChatMemberRole
 )
 
 data class CreateChatResponse(val chatId: Long, val message: String)

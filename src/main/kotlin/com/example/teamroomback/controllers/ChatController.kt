@@ -107,4 +107,97 @@ class ChatController(private val chatService: ChatService) {
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
         }
     }
+
+    @GetMapping("/{chatId}/members")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
+    @Operation(summary = "Отримати список учасників чату")
+    @ApiResponse(responseCode = "200", description = "Список учасників")
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено")
+    fun getChatMembers(@PathVariable chatId: Long): ResponseEntity<List<ChatMemberDetailsDTO>> {
+        val members = chatService.getChatMembers(chatId)
+        return ResponseEntity.ok(members)
+    }
+
+    @PostMapping("/{chatId}/members")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
+    @Operation(summary = "Додати нового учасника в чат")
+    @ApiResponse(responseCode = "201", description = "Учасника додано")
+    @ApiResponse(responseCode = "400", description = "Невірний запит (користувач вже в чаті або не існує)")
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено")
+    fun addChatMember(@PathVariable chatId: Long, @Valid @RequestBody request: AddChatMemberRequest): ResponseEntity<Any> {
+        return try {
+            val newMember = chatService.addMember(chatId, request)
+            ResponseEntity.status(HttpStatus.CREATED).body(
+                ChatMemberDetailsDTO(
+                    username = newMember.user.username,
+                    role = newMember.role,
+                    joinedAt = newMember.joinedAt
+                )
+            )
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message ?: "Bad Request"))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message ?: "Bad Request"))
+        } catch (e: AccessDeniedException) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(SimpleMessageResponse(e.message ?: "Forbidden"))
+        }
+    }
+
+    @PutMapping("/{chatId}/members/{username}")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
+    @Operation(summary = "Змінити роль учаснику чату")
+    @ApiResponse(responseCode = "200", description = "Роль оновлено")
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено (недостатньо прав для зміни)")
+    @ApiResponse(responseCode = "404", description = "Учасника не знайдено")
+    fun updateMemberRole(
+        @PathVariable chatId: Long,
+        @PathVariable username: String,
+        @RequestBody request: UpdateChatMemberRoleRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val actorUsername = SecurityContextHolder.getContext().authentication.name
+            val updatedMember = chatService.updateMemberRole(chatId, username, request.role, actorUsername)
+            ResponseEntity.ok(ChatMemberDetailsDTO(updatedMember.user.username, updatedMember.role, updatedMember.joinedAt))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        } catch (e: AccessDeniedException) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(SimpleMessageResponse(e.message ?: "Forbidden"))
+        }
+    }
+
+    @DeleteMapping("/{chatId}/members/{username}")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
+    @Operation(summary = "Видалити учасника з чату")
+    @ApiResponse(responseCode = "200", description = "Учасника видалено")
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено")
+    @ApiResponse(responseCode = "404", description = "Учасника не знайдено")
+    fun removeMember(@PathVariable chatId: Long, @PathVariable username: String): ResponseEntity<Any> {
+        return try {
+            val actorUsername = SecurityContextHolder.getContext().authentication.name
+            chatService.removeMember(chatId, username, actorUsername)
+            ResponseEntity.ok(SimpleMessageResponse("User '$username' removed from chat successfully"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        } catch (e: AccessDeniedException) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(SimpleMessageResponse(e.message ?: "Forbidden"))
+        }
+    }
+
+    @DeleteMapping("/{chatId}/members/me")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
+    @Operation(summary = "Вийти з чату")
+    @ApiResponse(responseCode = "200", description = "Ви успішно покинули чат")
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено (власник не може покинути чат)")
+    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    fun leaveChat(@PathVariable chatId: Long): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+            chatService.leaveChat(chatId, username)
+            ResponseEntity.ok(SimpleMessageResponse("You have successfully left the chat"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        } catch (e: AccessDeniedException) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(SimpleMessageResponse(e.message ?: "Forbidden"))
+        }
+    }
 }

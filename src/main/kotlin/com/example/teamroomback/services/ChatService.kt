@@ -6,8 +6,10 @@ import com.example.teamroomback.repositories.ChatMemberRepository
 import com.example.teamroomback.repositories.ChatRepository
 import com.example.teamroomback.repositories.UserRepository
 import jakarta.persistence.EntityNotFoundException
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.client.HttpClientErrorException
 
 @Service
 class ChatService(
@@ -113,5 +115,97 @@ class ChatService(
         return chatMemberRepository.findByChatIdAndUserUsername(chatId, username)
             .map { it.role }
             .orElse(null)
+    }
+
+    @Transactional(readOnly = true)
+    fun getChatMembers(chatId: Long): List<ChatMemberDetailsDTO> {
+        return chatMemberRepository.findAllByChatId(chatId).map {
+            ChatMemberDetailsDTO(
+                username = it.user.username,
+                role = it.role,
+                joinedAt = it.joinedAt
+            )
+        }
+    }
+
+    @Transactional
+    fun addMember(chatId: Long, request: AddChatMemberRequest): ChatMember {
+        if (chatMemberRepository.existsByChatIdAndUserUsername(chatId, request.username)) {
+            throw IllegalArgumentException("User '${request.username}' is already a member of this chat.")
+        }
+
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+        val user = userRepository.findByUsernameValue(request.username)
+            ?: throw EntityNotFoundException("User with username '${request.username}' not found.")
+
+        if (request.role == ChatMemberRole.OWNER) {
+            throw AccessDeniedException("Cannot assign OWNER role directly.")
+        }
+
+        val newMember = ChatMember(
+            chat = chat,
+            user = user,
+            role = request.role
+        )
+
+        return chatMemberRepository.save(newMember)
+    }
+
+    @Transactional
+    fun updateMemberRole(chatId: Long, targetUsername: String, newRole: ChatMemberRole, actorUsername: String): ChatMember {
+        val actorMember = chatMemberRepository.findByChatIdAndUserUsername(chatId, actorUsername)
+            .orElseThrow { AccessDeniedException("Action performer is not a member of the chat.") }
+
+        val targetMember = chatMemberRepository.findByChatIdAndUserUsername(chatId, targetUsername)
+            .orElseThrow { EntityNotFoundException("Target user '$targetUsername' is not a member of this chat.") }
+
+        if (targetMember.role == ChatMemberRole.OWNER) {
+            throw AccessDeniedException("Cannot change the role of the chat OWNER.")
+        }
+
+        if (newRole == ChatMemberRole.OWNER) {
+            throw AccessDeniedException("Cannot assign OWNER role. Ownership must be transferred.")
+        }
+
+        if (newRole == ChatMemberRole.ADMIN || targetMember.role == ChatMemberRole.ADMIN) {
+            if (actorMember.role != ChatMemberRole.OWNER) {
+                throw AccessDeniedException("Only the OWNER can manage ADMIN roles.")
+            }
+        }
+
+        targetMember.role = newRole
+        return chatMemberRepository.save(targetMember)
+    }
+
+    @Transactional
+    fun removeMember(chatId: Long, targetUsername: String, actorUsername: String) {
+        val actorMember = chatMemberRepository.findByChatIdAndUserUsername(chatId, actorUsername)
+            .orElseThrow { AccessDeniedException("Action performer is not a member of the chat.") }
+
+        val targetMember = chatMemberRepository.findByChatIdAndUserUsername(chatId, targetUsername)
+            .orElseThrow { EntityNotFoundException("Target user '$targetUsername' is not a member of this chat.") }
+
+        if (targetMember.role == ChatMemberRole.OWNER) {
+            throw AccessDeniedException("Chat OWNER cannot be removed from the chat.")
+        }
+
+        if (targetMember.role == ChatMemberRole.ADMIN && actorMember.role != ChatMemberRole.OWNER) {
+            throw AccessDeniedException("Only the OWNER can remove an ADMIN.")
+        }
+
+        chatMemberRepository.delete(targetMember)
+    }
+
+    @Transactional
+    fun leaveChat(chatId: Long, username: String) {
+        val member = chatMemberRepository.findByChatIdAndUserUsername(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of this chat.") }
+
+        if (member.role == ChatMemberRole.OWNER) {
+            throw AccessDeniedException("The OWNER cannot leave the chat. Delete the chat or transfer ownership first.")
+        }
+
+        chatMemberRepository.delete(member)
     }
 }

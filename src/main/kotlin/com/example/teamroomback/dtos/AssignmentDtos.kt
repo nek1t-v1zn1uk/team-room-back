@@ -125,7 +125,6 @@ data class CreateAssignmentResponseResponse(
     val message: String
 )
 
-// DTOs for data transfer
 
 @Schema(description = "Скорочена інформація про завдання для списків")
 data class AssignmentShortDTO(
@@ -215,4 +214,20 @@ data class AssignmentResponseMediaDTO(
     val name: String?,
     @Schema(description = "URL-адреса файлу", example = "https://example.com/files/solution.docx")
     val fileUrl: String?
+)
+
+@Schema(description = "Скорочена інформація про відповідь користувача на завдання")
+data class UserAssignmentResponseDTO(
+    @Schema(description = "ID завдання", example = "1")
+    val assignmentId: Long,
+    @Schema(description = "Назва завдання", example = "Лабораторна робота №1")
+    val assignmentTitle: String,
+    @Schema(description = "ID відповіді", example = "101")
+    val responseId: Long,
+    @Schema(description = "Чи оцінена робота", example = "true")
+    val isGraded: Boolean,
+    @Schema(description = "Оцінка", example = "95")
+    val grade: Int?,
+    @Schema(description = "Чи повернута робота на доопрацювання", example = "false")
+    val isReturned: Boolean
 )

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
+import org.apache.coyote.BadRequestException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
@@ -230,6 +231,8 @@ class AssignmentController(
             )
         } catch (e: InstanceNotFoundException) {
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message.toString()))
+        } catch (e: BadRequestException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message.toString()))
         }
     }
 
@@ -251,8 +254,44 @@ class AssignmentController(
         }
     }
 
+    @GetMapping("/{assignmentId}/responses/my")
+    @PreAuthorize("hasPermission(#courseId, 'STUDENT')")
+    @CourseOpenStatus
+    @Operation(summary = "Отримати свою відповідь на завдання.", description = "Потребує ролі не нижче STUDENT. Курс повинний бути відкритим.", tags=["Завдання, відповіді - керування відповідями в завданнях курсу"])
+    @ApiResponse(responseCode = "200", description = "Відповідь успішно отримано.", content = [Content(schema = Schema(implementation = AssignmentResponseDTO::class))])
+    fun getMyAssignmentResponse(
+        @Parameter(description = "ID курсу") @PathVariable courseId: Long,
+        @Parameter(description = "ID завдання") @PathVariable assignmentId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+            val response = assignmentService.getMyAssignmentResponse(assignmentId, username)
+            ResponseEntity.ok(response.toUserAssignmentResponseDTO())
+        } catch (e: InstanceNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message.toString()))
+        }
+    }
+
+    @GetMapping("/my-responses")
+    @PreAuthorize("hasPermission(#courseId, 'STUDENT')")
+    @CourseOpenStatus
+    @Operation(summary = "Отримати всі свої відповіді в курсі.", description = "Потребує ролі не нижче STUDENT. Курс повинний бути відкритим.", tags=["Завдання, відповіді - керування відповідями в завданнях курсу"])
+    @ApiResponse(responseCode = "200", description = "Список відповідей успішно отримано.")
+    fun getAllMyResponses(
+        @Parameter(description = "ID курсу") @PathVariable courseId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+            val responses = assignmentService.getAllMyResponses(courseId, username)
+            val responseDTOs = responses.map { it.toUserAssignmentResponseDTO() }
+            ResponseEntity.ok(mapOf("responses" to responseDTOs))
+        } catch (e: InstanceNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message.toString()))
+        }
+    }
+
     @GetMapping("/{assignmentId}/responses/{responseId}")
-    @PreAuthorize("hasPermission(#courseId, 'STUDENT')") // Professor can also view, STUDENT is minimum
+    @PreAuthorize("hasPermission(#courseId, 'STUDENT')")
     @CourseOpenStatus
     @Operation(summary = "Отримати відповідь на завдання за ID.", description = "Потребує ролі не нижче STUDENT. Курс повинний бути відкритим.", tags=["Завдання, відповіді - керування відповідями в завданнях курсу"])
     @ApiResponse(responseCode = "200", description = "Відповідь успішно отримано.", content = [Content(schema = Schema(implementation = AssignmentResponseDTO::class))])

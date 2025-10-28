@@ -3,6 +3,7 @@ package com.example.teamroomback.entities
 import com.example.teamroomback.dtos.AssignmentResponseDTO
 import com.example.teamroomback.dtos.AssignmentResponseMediaDTO
 import com.example.teamroomback.dtos.AssignmentResponseShortDTO
+import com.example.teamroomback.dtos.UserAssignmentResponseDTO
 import jakarta.persistence.*
 
 @Entity
@@ -56,6 +57,17 @@ data class AssignmentResponse(
         return AssignmentResponseShortDTO(
             id = this.id!!,
             authorUsername = this.author.username,
+            isGraded = this.isGraded,
+            grade = this.grade,
+            isReturned = this.isReturned
+        )
+    }
+
+    fun toUserAssignmentResponseDTO(): UserAssignmentResponseDTO {
+        return UserAssignmentResponseDTO(
+            assignmentId = this.assignment.id!!,
+            assignmentTitle = this.assignment.title,
+            responseId = this.id!!,
             isGraded = this.isGraded,
             grade = this.grade,
             isReturned = this.isReturned

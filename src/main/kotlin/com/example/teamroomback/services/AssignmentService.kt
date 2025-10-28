@@ -7,6 +7,7 @@ import com.example.teamroomback.entities.AssignmentResponse
 import com.example.teamroomback.entities.AssignmentResponseMedia
 import com.example.teamroomback.entities.CourseMemberRole
 import com.example.teamroomback.repositories.*
+import org.apache.coyote.BadRequestException
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -162,6 +163,9 @@ class AssignmentService(
             ?: throw InstanceNotFoundException("User with username $authorUsername not found")
         val assignment = getAssignment(assignmentId)
 
+        assignmentResponseRepository.findByAssignmentIdAndAuthorId(assignmentId, author.id!!)
+            ?: throw BadRequestException("Assignment response for assignment $assignmentId already exists")
+
         val response = AssignmentResponse(
             assignment = assignment,
             author = author
@@ -195,6 +199,19 @@ class AssignmentService(
     fun getAssignmentResponse(responseId: Long): AssignmentResponse {
         return assignmentResponseRepository.findById(responseId)
             .orElseThrow { InstanceNotFoundException("Assignment response with id $responseId not found") }
+    }
+
+    fun getMyAssignmentResponse(assignmentId: Long, username: String): AssignmentResponse {
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw InstanceNotFoundException("User with username $username not found")
+        return assignmentResponseRepository.findByAssignmentIdAndAuthorId(assignmentId, user.id!!)
+            ?: throw InstanceNotFoundException("Assignment response for assignment $assignmentId by user $username not found")
+    }
+
+    fun getAllMyResponses(courseId: Long, username: String): List<AssignmentResponse> {
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw InstanceNotFoundException("User with username $username not found")
+        return assignmentResponseRepository.findByAuthorIdAndAssignmentCourseId(user.id!!, courseId)
     }
 
     @Transactional

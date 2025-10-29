@@ -9,7 +9,6 @@ import jakarta.persistence.EntityNotFoundException
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.client.HttpClientErrorException
 
 @Service
 class ChatService(
@@ -59,7 +58,7 @@ class ChatService(
         val chat = chatRepository.findById(chatId)
             .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
 
-        val currentUserMemberInfo = chatMemberRepository.findByChatIdAndUserUsername(chatId, username)
+        val currentUserMemberInfo = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
             .orElseThrow { IllegalAccessError("User is not a member of this chat") }
 
         return ChatDetailsDTO(
@@ -112,7 +111,7 @@ class ChatService(
         if (!chatRepository.existsById(chatId)) {
             return null
         }
-        return chatMemberRepository.findByChatIdAndUserUsername(chatId, username)
+        return chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
             .map { it.role }
             .orElse(null)
     }
@@ -130,7 +129,7 @@ class ChatService(
 
     @Transactional
     fun addMember(chatId: Long, request: AddChatMemberRequest): ChatMember {
-        if (chatMemberRepository.existsByChatIdAndUserUsername(chatId, request.username)) {
+        if (chatMemberRepository.existsByChatIdAndUserUsernameValue(chatId, request.username)) {
             throw IllegalArgumentException("User '${request.username}' is already a member of this chat.")
         }
 
@@ -154,10 +153,10 @@ class ChatService(
 
     @Transactional
     fun updateMemberRole(chatId: Long, targetUsername: String, newRole: ChatMemberRole, actorUsername: String): ChatMember {
-        val actorMember = chatMemberRepository.findByChatIdAndUserUsername(chatId, actorUsername)
+        val actorMember = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, actorUsername)
             .orElseThrow { AccessDeniedException("Action performer is not a member of the chat.") }
 
-        val targetMember = chatMemberRepository.findByChatIdAndUserUsername(chatId, targetUsername)
+        val targetMember = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, targetUsername)
             .orElseThrow { EntityNotFoundException("Target user '$targetUsername' is not a member of this chat.") }
 
         if (targetMember.role == ChatMemberRole.OWNER) {
@@ -180,10 +179,10 @@ class ChatService(
 
     @Transactional
     fun removeMember(chatId: Long, targetUsername: String, actorUsername: String) {
-        val actorMember = chatMemberRepository.findByChatIdAndUserUsername(chatId, actorUsername)
+        val actorMember = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, actorUsername)
             .orElseThrow { AccessDeniedException("Action performer is not a member of the chat.") }
 
-        val targetMember = chatMemberRepository.findByChatIdAndUserUsername(chatId, targetUsername)
+        val targetMember = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, targetUsername)
             .orElseThrow { EntityNotFoundException("Target user '$targetUsername' is not a member of this chat.") }
 
         if (targetMember.role == ChatMemberRole.OWNER) {
@@ -199,7 +198,7 @@ class ChatService(
 
     @Transactional
     fun leaveChat(chatId: Long, username: String) {
-        val member = chatMemberRepository.findByChatIdAndUserUsername(chatId, username)
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
             .orElseThrow { EntityNotFoundException("User is not a member of this chat.") }
 
         if (member.role == ChatMemberRole.OWNER) {

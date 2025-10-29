@@ -28,6 +28,8 @@ import org.springdoc.core.customizers.OpenApiCustomizer
         Tag(name = "Завдання - керування завданнями курсу"),
         Tag(name = "Завдання, медіа - керування медіа в завданнях курсу"),
         Tag(name = "Завдання, відповіді - керування відповідями в завданнях курсу"),
+
+        Tag(name = "Чати"),
     ]
 )
 @SecurityScheme(

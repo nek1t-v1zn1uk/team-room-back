@@ -207,4 +207,25 @@ class ChatService(
 
         chatMemberRepository.delete(member)
     }
+
+    @Transactional
+    fun transferOwnership(chatId: Long, newOwnerUsername: String, currentOwnerUsername: String) {
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+
+        val currentOwnerMember = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, currentOwnerUsername)
+            .orElseThrow { AccessDeniedException("Current owner is not a member of the chat.") }
+
+        if (currentOwnerMember.role != ChatMemberRole.OWNER) {
+            throw AccessDeniedException("Only the current owner can transfer ownership.")
+        }
+
+        val newOwnerMember = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, newOwnerUsername)
+            .orElseThrow { EntityNotFoundException("New owner is not a member of the chat.") }
+
+        currentOwnerMember.role = ChatMemberRole.ADMIN
+        newOwnerMember.role = ChatMemberRole.OWNER
+
+        chatMemberRepository.saveAll(listOf(currentOwnerMember, newOwnerMember))
+    }
 }

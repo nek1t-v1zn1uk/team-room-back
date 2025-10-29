@@ -30,6 +30,8 @@ import org.springdoc.core.customizers.OpenApiCustomizer
         Tag(name = "Завдання, відповіді - керування відповідями в завданнях курсу"),
 
         Tag(name = "Чати"),
+        Tag(name = "Чати - керування чатами"),
+        Tag(name = "Чати, учасники - керування учасниками чату"),
     ]
 )
 @SecurityScheme(

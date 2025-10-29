@@ -200,4 +200,27 @@ class ChatController(private val chatService: ChatService) {
             ResponseEntity.status(HttpStatus.FORBIDDEN).body(SimpleMessageResponse(e.message ?: "Forbidden"))
         }
     }
+
+    @PostMapping("/{chatId}/transfer-ownership")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'OWNER')")
+    @Operation(summary = "Передати права власності на чат")
+    @ApiResponse(responseCode = "200", description = "Права власності успішно передано")
+    @ApiResponse(responseCode = "400", description = "Невірний запит (новий власник не є учасником чату)")
+    @ApiResponse(responseCode = "403", description = "Доступ заборонено (тільки поточний власник може передати права)")
+    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    fun transferOwnership(
+        @PathVariable chatId: Long,
+        @Valid @RequestBody request: TransferOwnershipRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val currentOwnerUsername = SecurityContextHolder.getContext().authentication.name
+            chatService.transferOwnership(chatId, request.newOwnerUsername, currentOwnerUsername)
+
+            ResponseEntity.ok(SimpleMessageResponse("Ownership transferred successfully to ${request.newOwnerUsername}"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        } catch (e: AccessDeniedException) {
+            ResponseEntity.status(HttpStatus.FORBIDDEN).body(SimpleMessageResponse(e.message ?: "Forbidden"))
+        }
+    }
 }

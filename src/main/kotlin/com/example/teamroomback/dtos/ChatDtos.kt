@@ -73,5 +73,10 @@ data class UpdateChatMemberRoleRequest(
     val role: ChatMemberRole
 )
 
+data class TransferOwnershipRequest(
+    @field:NotBlank(message = "New owner username cannot be blank")
+    val newOwnerUsername: String
+)
+
 data class CreateChatResponse(val chatId: Long, val message: String)
 data class SimpleChatResponse(val chatId: Long, val message: String)

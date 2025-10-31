@@ -1,5 +1,8 @@
 package com.example.teamroomback.entities
 
+import com.example.teamroomback.dtos.ChatMessageDto
+import com.example.teamroomback.dtos.ChatMessageMediaDto
+import com.example.teamroomback.dtos.ChatMessageRelatedEntityDto
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.JdbcTypeCode
@@ -43,14 +46,34 @@ data class ChatMessage(
     var isDeleted: Boolean = false,
 
     @OneToMany(mappedBy = "message", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val relatedEntities: List<ChatMessageRelatedEntity> = listOf(),
+    var relatedEntities: MutableList<ChatMessageRelatedEntity> = mutableListOf(),
 
     @OneToMany(mappedBy = "message", cascade = [CascadeType.ALL], orphanRemoval = true)
-    val media: List<ChatMessageMedia> = listOf(),
+    var media: MutableList<ChatMessageMedia> = mutableListOf(),
 
     @OneToMany(mappedBy = "message", cascade = [CascadeType.ALL], orphanRemoval = true)
     val reactions: List<MessageReaction> = listOf()
-)
+) {
+    fun toChatMessageDto(): ChatMessageDto {
+        return ChatMessageDto(
+            id = id!!,
+            chatId = chat.id!!,
+            username = user?.username,
+            content = content,
+            type = type,
+            replyToMessageId = replyToMessage?.id,
+            sentAt = sentAt!!,
+            editedAt = editedAt,
+            isDeleted = isDeleted,
+            relatedEntities = relatedEntities.map {
+                ChatMessageRelatedEntityDto(it.relatedEntityType, it.relatedEntityId)
+            },
+            media = media.map {
+                ChatMessageMediaDto(it.fileUrl, it.fileName, it.fileType, it.fileSizeBytes)
+            }
+        )
+    }
+}
 
 enum class ChatMessageType {
     USER_JOINED_TO_CHAT,

@@ -1,5 +1,6 @@
 package com.example.teamroomback.services
 
+import com.example.teamroomback.dtos.ChatMessageDto
 import com.example.teamroomback.dtos.WebSocketBroadcast
 import com.example.teamroomback.dtos.WebSocketMessageType
 import com.example.teamroomback.entities.Assignment
@@ -16,6 +17,9 @@ class WebSocketNotificationService(
 
     private fun sendAsUserNotification(username: String, payload: WebSocketBroadcast) {
         simpMessagingTemplate.convertAndSendToUser(username, "/queue/notifications", payload)
+    }
+    private fun sendToTopic(path: String, payload: WebSocketBroadcast) {
+        simpMessagingTemplate.convertAndSend(path, payload)
     }
 
     fun notifyUserAboutJoiningToCourse(member: CourseMember) {
@@ -229,5 +233,12 @@ class WebSocketNotificationService(
         sendAsUserNotification(username, message)
     }
 
+
+    fun sendChatMessage(chatId: Long, message: ChatMessageDto) {
+        sendToTopic("/topic/chats/$chatId", WebSocketBroadcast(
+            type = WebSocketMessageType.USER_MESSAGE,
+            payload = message
+        ))
+    }
 
 }

@@ -24,4 +24,7 @@ enum class WebSocketMessageType {
     ASSIGNMENT_RESPONSE_DELETED,
 
 
+
+    USER_MESSAGE
+
 }

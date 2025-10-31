@@ -163,8 +163,8 @@ class AssignmentService(
             ?: throw InstanceNotFoundException("User with username $authorUsername not found")
         val assignment = getAssignment(assignmentId)
 
-        assignmentResponseRepository.findByAssignmentIdAndAuthorId(assignmentId, author.id!!)
-            ?: throw BadRequestException("Assignment response for assignment $assignmentId already exists")
+        if(assignmentResponseRepository.findByAssignmentIdAndAuthorId(assignmentId, author.id!!) != null)
+            throw BadRequestException("Assignment response for assignment $assignmentId already exists")
 
         val response = AssignmentResponse(
             assignment = assignment,

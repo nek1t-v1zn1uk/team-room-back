@@ -28,5 +28,8 @@ enum class WebSocketMessageType {
     USER_MESSAGE,
     REACTION_UPDATE,
     MESSAGE_UPDATE,
-    MESSAGE_DELETED
+    MESSAGE_DELETED,
+
+    START_TYPING,
+    STOP_TYPING
 }

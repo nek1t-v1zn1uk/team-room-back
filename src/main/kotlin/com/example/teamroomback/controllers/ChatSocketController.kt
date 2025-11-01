@@ -59,4 +59,24 @@ class ChatSocketController(
 
         messageService.deleteMessage(chatId, username, request)
     }
+
+    @MessageMapping("/chat/{chatId}/typing/start")
+    fun startTyping(
+        @DestinationVariable chatId: Long,
+        headerAccessor: SimpMessageHeaderAccessor
+    ) {
+        val username = headerAccessor.user!!.name
+
+        messageService.startTyping(chatId, username)
+    }
+
+    @MessageMapping("/chat/{chatId}/typing/stop")
+    fun stopTyping(
+        @DestinationVariable chatId: Long,
+        headerAccessor: SimpMessageHeaderAccessor
+    ) {
+        val username = headerAccessor.user!!.name
+
+        messageService.stopTyping(chatId, username)
+    }
 }

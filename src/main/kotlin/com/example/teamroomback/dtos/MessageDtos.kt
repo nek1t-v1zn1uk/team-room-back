@@ -51,6 +51,10 @@ data class DeleteMessageDto(
     val deletedAt: LocalDateTime
 )
 
+data class TypingStatusDto(
+    val username: String,
+)
+
 data class ChatMessageDto(
     val id: Long,
     val chatId: Long,

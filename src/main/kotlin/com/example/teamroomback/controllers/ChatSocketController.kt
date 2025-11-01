@@ -1,5 +1,6 @@
 package com.example.teamroomback.controllers
 
+import com.example.teamroomback.dtos.ReactionRequest
 import com.example.teamroomback.dtos.SendMessageRequest
 import com.example.teamroomback.services.MessageService
 import org.springframework.messaging.handler.annotation.DestinationVariable
@@ -22,5 +23,16 @@ class ChatSocketController(
         val username = headerAccessor.user!!.name
 
         messageService.postMessage(chatId, username, request)
+    }
+
+    @MessageMapping("/chat/{chatId}/react")
+    fun reactToMessage(
+        @DestinationVariable chatId: Long,
+        @Payload request: ReactionRequest,
+        headerAccessor: SimpMessageHeaderAccessor
+    ) {
+        val username = headerAccessor.user!!.name
+
+        messageService.reactToMessage(chatId, username, request)
     }
 }

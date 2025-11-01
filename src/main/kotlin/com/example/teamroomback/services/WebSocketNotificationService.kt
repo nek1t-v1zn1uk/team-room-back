@@ -234,9 +234,9 @@ class WebSocketNotificationService(
     }
 
 
-    fun sendChatMessage(chatId: Long, message: ChatMessageDto) {
+    fun sendChatMessage(chatId: Long, type: WebSocketMessageType, message: Any) {
         sendToTopic("/topic/chats/$chatId", WebSocketBroadcast(
-            type = WebSocketMessageType.USER_MESSAGE,
+            type = type,
             payload = message
         ))
     }

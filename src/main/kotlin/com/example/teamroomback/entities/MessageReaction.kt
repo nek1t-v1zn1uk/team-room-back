@@ -22,7 +22,7 @@ data class MessageReaction(
     val user: User,
 
     @Column(name = "reaction_emoji", length = 10, nullable = false)
-    val reactionEmoji: String,
+    var reactionEmoji: String,
 
     @CreationTimestamp
     @Column(name = "reaction_time", nullable = false, updatable = false)

@@ -23,6 +23,18 @@ data class SendMessageRequest(
     val media: List<ChatMessageMediaDto> = listOf()
 )
 
+data class MessageReactionDto(
+    val messageId: Long,
+    val username: String,
+    val emoji: String? = null,
+    val reactionTime: LocalDateTime? = null
+)
+
+data class ReactionRequest(
+    val messageId: Long,
+    val emoji: String
+)
+
 data class ChatMessageDto(
     val id: Long,
     val chatId: Long,
@@ -34,5 +46,6 @@ data class ChatMessageDto(
     val editedAt: LocalDateTime?,
     val isDeleted: Boolean,
     val relatedEntities: List<ChatMessageRelatedEntityDto> = listOf(),
-    val media: List<ChatMessageMediaDto> = listOf()
+    val media: List<ChatMessageMediaDto> = listOf(),
+    val reactions: List<MessageReactionDto> = listOf()
 )

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*
 class ChatController(private val chatService: ChatService) {
 
     @GetMapping
-    @Operation(summary = "Отримати чати поточного користувача", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Отримати чати поточного користувача", description = "", tags = ["Чати - керування чатами"])
     @ApiResponse(responseCode = "200", description = "Список чатів користувача")
     fun getUserChats(): ResponseEntity<List<UserChatDTO>> {
         val username = SecurityContextHolder.getContext().authentication.name
@@ -32,7 +32,7 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @PostMapping
-    @Operation(summary = "Створити новий груповий чат", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Створити новий груповий чат", description = "", tags = ["Чати - керування чатами"])
     @ApiResponse(responseCode = "201", description = "Чат успішно створено")
     fun createGroupChat(@Valid @RequestBody request: CreateGroupChatRequest): ResponseEntity<Any> {
         return try {
@@ -47,7 +47,7 @@ class ChatController(private val chatService: ChatService) {
 
     @GetMapping("/{chatId}")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
-    @Operation(summary = "Отримати детальну інформацію про чат", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Отримати детальну інформацію про чат", description = "Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами"])
     @ApiResponse(responseCode = "200", description = "Деталі чату")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
@@ -65,7 +65,7 @@ class ChatController(private val chatService: ChatService) {
 
     @PutMapping("/{chatId}")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Повністю оновити чат (ім'я, фото)", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Повністю оновити чат (ім'я, фото)", description = "Потребує ролі не нижче ADMIN.", tags = ["Чати - керування чатами"])
     @ApiResponse(responseCode = "200", description = "Чат оновлено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
@@ -80,7 +80,7 @@ class ChatController(private val chatService: ChatService) {
 
     @PatchMapping("/{chatId}")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Частково оновити чат (ім'я або фото)", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Частково оновити чат (ім'я або фото)", description = "Потребує ролі не нижче ADMIN.", tags = ["Чати - керування чатами"])
     @ApiResponse(responseCode = "200", description = "Чат оновлено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
@@ -95,7 +95,7 @@ class ChatController(private val chatService: ChatService) {
 
     @DeleteMapping("/{chatId}")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'OWNER')")
-    @Operation(summary = "Видалити чат", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Видалити чат", description = "Потребує ролі не нижче OWNER.", tags = ["Чати - керування чатами"])
     @ApiResponse(responseCode = "200", description = "Чат видалено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
@@ -110,7 +110,7 @@ class ChatController(private val chatService: ChatService) {
 
     @GetMapping("/{chatId}/members")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
-    @Operation(summary = "Отримати список учасників чату", tags = ["Чати, учасники - керування учасниками чату"])
+    @Operation(summary = "Отримати список учасників чату", description = "Потребує ролі не нижче VIEWER.", tags = ["Чати, учасники - керування учасниками чату"])
     @ApiResponse(responseCode = "200", description = "Список учасників")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     fun getChatMembers(@PathVariable chatId: Long): ResponseEntity<List<ChatMemberDetailsDTO>> {
@@ -120,7 +120,7 @@ class ChatController(private val chatService: ChatService) {
 
     @PostMapping("/{chatId}/members")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Додати нового учасника в чат", tags = ["Чати, учасники - керування учасниками чату"])
+    @Operation(summary = "Додати нового учасника в чат", description = "Потребує ролі не нижче ADMIN.", tags = ["Чати, учасники - керування учасниками чату"])
     @ApiResponse(responseCode = "201", description = "Учасника додано")
     @ApiResponse(responseCode = "400", description = "Невірний запит (користувач вже в чаті або не існує)")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
@@ -145,7 +145,7 @@ class ChatController(private val chatService: ChatService) {
 
     @PutMapping("/{chatId}/members/{username}")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Змінити роль учаснику чату", tags = ["Чати, учасники - керування учасниками чату"])
+    @Operation(summary = "Змінити роль учаснику чату", description = "Потребує ролі не нижче ADMIN.", tags = ["Чати, учасники - керування учасниками чату"])
     @ApiResponse(responseCode = "200", description = "Роль оновлено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено (недостатньо прав для зміни)")
     @ApiResponse(responseCode = "404", description = "Учасника не знайдено")
@@ -167,7 +167,7 @@ class ChatController(private val chatService: ChatService) {
 
     @DeleteMapping("/{chatId}/members/{username}")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Видалити учасника з чату", tags = ["Чати, учасники - керування учасниками чату"])
+    @Operation(summary = "Видалити учасника з чату", description = "Потребує ролі не нижче ADMIN.", tags = ["Чати, учасники - керування учасниками чату"])
     @ApiResponse(responseCode = "200", description = "Учасника видалено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Учасника не знайдено")
@@ -185,7 +185,7 @@ class ChatController(private val chatService: ChatService) {
 
     @DeleteMapping("/{chatId}/members/me")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
-    @Operation(summary = "Вийти з чату", tags = ["Чати, учасники - керування учасниками чату"])
+    @Operation(summary = "Вийти з чату", description = "Потребує ролі не нижче VIEWER.", tags = ["Чати, учасники - керування учасниками чату"])
     @ApiResponse(responseCode = "200", description = "Ви успішно покинули чат")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено (власник не може покинути чат)")
     @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
@@ -203,7 +203,7 @@ class ChatController(private val chatService: ChatService) {
 
     @PostMapping("/{chatId}/transfer-ownership")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'OWNER')")
-    @Operation(summary = "Передати права власності на чат", tags = ["Чати, учасники - керування учасниками чату"])
+    @Operation(summary = "Передати права власності на чат", description = "Потребує ролі не нижче OWNER.", tags = ["Чати, учасники - керування учасниками чату"])
     @ApiResponse(responseCode = "200", description = "Права власності успішно передано")
     @ApiResponse(responseCode = "400", description = "Невірний запит (новий власник не є учасником чату)")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено (тільки поточний власник може передати права)")

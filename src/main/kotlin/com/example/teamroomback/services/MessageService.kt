@@ -148,7 +148,7 @@ class MessageService(
             .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
 
         if (message.user?.id != user.id && !member.role.isAtLeast(ChatMemberRole.ADMIN))
-            throw IllegalArgumentException("User is not the author of the message and he is not an admin")
+            throw IllegalArgumentException("User is not the author of the message and he doesnt have that permission")
 
 
         message.content = request.content
@@ -194,8 +194,8 @@ class MessageService(
         val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
             .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
 
-        if (message.user?.id != user.id && !member.role.isAtLeast(ChatMemberRole.ADMIN))
-            throw IllegalArgumentException("User is not the author of the message and he is not an admin")
+        if (message.user?.id != user.id && !member.role.isAtLeast(ChatMemberRole.MODERATOR))
+            throw IllegalArgumentException("User is not the author of the message and he doesnt have that permission")
 
         message.isDeleted = true
         message.editedAt = LocalDateTime.now()

@@ -35,6 +35,13 @@ data class ReactionRequest(
     val emoji: String
 )
 
+data class EditMessageRequest(
+    val messageId: Long,
+    val content: String? = null,
+    val relatedEntities: List<ChatMessageRelatedEntityDto> = listOf(),
+    val media: List<ChatMessageMediaDto> = listOf()
+)
+
 data class DeleteMessageRequest(
     val messageId: Long
 )
@@ -55,6 +62,5 @@ data class ChatMessageDto(
     val editedAt: LocalDateTime?,
     val isDeleted: Boolean,
     val relatedEntities: List<ChatMessageRelatedEntityDto> = listOf(),
-    val media: List<ChatMessageMediaDto> = listOf(),
-    val reactions: List<MessageReactionDto> = listOf()
+    val media: List<ChatMessageMediaDto> = listOf()
 )

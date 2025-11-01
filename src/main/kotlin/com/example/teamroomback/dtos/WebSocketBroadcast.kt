@@ -5,10 +5,6 @@ data class WebSocketBroadcast(
     val payload: Any
 )
 enum class WebSocketMessageType {
-    CHAT_MESSAGE,
-    USER_JOINED,
-    USER_LEFT,
-    ROOM_CREATED,
 
     JOINED_TO_COURSE,
     REMOVED_FROM_COURSE,
@@ -28,4 +24,14 @@ enum class WebSocketMessageType {
     ASSIGNMENT_RESPONSE_DELETED,
 
 
+
+    USER_MESSAGE,
+    REACTION_UPDATE,
+    MESSAGE_UPDATE,
+    MESSAGE_DELETED,
+
+    START_TYPING,
+    STOP_TYPING,
+
+    READ_LAST_MESSAGE
 }

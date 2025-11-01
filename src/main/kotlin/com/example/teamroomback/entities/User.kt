@@ -24,12 +24,6 @@ data class User(
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
     val profile: Profile? = null,
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    val roomMembers: List<RoomMember> = listOf(),
-
-    @OneToMany(mappedBy = "sender", fetch = FetchType.LAZY)
-    val roomMessages: List<RoomMessage> = listOf(),
-
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     val courseMembers: List<CourseMember> = listOf(),
 
@@ -41,6 +35,15 @@ data class User(
 
     @OneToMany(mappedBy = "author", cascade = [CascadeType.ALL], orphanRemoval = true)
     val assignmentResponses: List<AssignmentResponse> = listOf(),
+
+    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val chatMemberships: List<ChatMember> = listOf(),
+
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    val chatMessages: List<ChatMessage> = listOf(),
+
+    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val messageReactions: List<MessageReaction> = listOf(),
 
 ) : UserDetails {
 

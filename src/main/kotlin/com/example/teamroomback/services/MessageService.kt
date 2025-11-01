@@ -1,49 +1,266 @@
 package com.example.teamroomback.services
 
-import com.example.teamroomback.dtos.ChatMessageRequest
-import com.example.teamroomback.dtos.ChatMessageResponse
-import com.example.teamroomback.dtos.WebSocketBroadcast
+import com.example.teamroomback.dtos.DeleteMessageDto
+import com.example.teamroomback.dtos.DeleteMessageRequest
+import com.example.teamroomback.dtos.EditMessageRequest
+import com.example.teamroomback.dtos.MessageReactionDto
+import com.example.teamroomback.dtos.ReactionRequest
+import com.example.teamroomback.dtos.ReadMessageRequest
+import com.example.teamroomback.dtos.SendMessageRequest
+import com.example.teamroomback.dtos.TypingStatusDto
+import com.example.teamroomback.dtos.UserReadLastMessageDto
 import com.example.teamroomback.dtos.WebSocketMessageType
-import com.example.teamroomback.entities.RoomMessage
-import com.example.teamroomback.repositories.MessageRepository
-import com.example.teamroomback.repositories.RoomRepository
-import org.springframework.messaging.simp.SimpMessagingTemplate
-import org.springframework.security.core.userdetails.UsernameNotFoundException
+import com.example.teamroomback.entities.*
+import com.example.teamroomback.repositories.ChatMemberRepository
+import com.example.teamroomback.repositories.ChatMessageRepository
+import com.example.teamroomback.repositories.ChatRepository
+import com.example.teamroomback.repositories.MessageReactionRepository
+import com.example.teamroomback.repositories.UserRepository
+import jakarta.persistence.EntityNotFoundException
 import org.springframework.stereotype.Service
-import javax.management.InstanceNotFoundException
+import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class MessageService(
-    private val simpMessagingTemplate: SimpMessagingTemplate,
-    val messageRepository: MessageRepository,
-    val roomRepository: RoomRepository,
-    val userService: UserService,
+    private val chatMessageRepository: ChatMessageRepository,
+    private val chatRepository: ChatRepository,
+    private val chatMemberRepository: ChatMemberRepository,
+    private val userRepository: UserRepository,
+    private val webSocketNotificationService: WebSocketNotificationService,
+    private val messageReactionRepository: MessageReactionRepository
 ) {
 
-    fun sendMessage(username: String, chatMessage: ChatMessageRequest) {
-        val room = roomRepository.findRoomById(chatMessage.roomId) ?: throw InstanceNotFoundException("Room not found")
-        val sender = userService.findByUsername(username) ?: throw UsernameNotFoundException("User not found")
-        val newMessage = messageRepository.save(RoomMessage(
-            room = room,
-            sender = sender,
-            content = chatMessage.content,
-            type = chatMessage.type,
-        ))
+    @Transactional
+    fun postMessage(chatId: Long, username: String, request: SendMessageRequest): ChatMessage {
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw EntityNotFoundException("User with username '$username' not found")
 
-        val broadcast = WebSocketBroadcast(
-            type = WebSocketMessageType.CHAT_MESSAGE,
-            payload = ChatMessageResponse(
-                senderUsername = newMessage.sender.username,
-                roomId = newMessage.room.id!!,
-                content = newMessage.content,
-                type = newMessage.type,
-            ),
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
+
+        val replyToMessage = request.replyToMessageId?.let {
+            chatMessageRepository.findById(it)
+                .orElseThrow { EntityNotFoundException("Replying to message with id $it not found") }
+        }
+
+        val message = ChatMessage(
+            chat = chat,
+            user = user,
+            content = request.content,
+            replyToMessage = replyToMessage
         )
-        simpMessagingTemplate.convertAndSend("/topic/rooms/${chatMessage.roomId}", broadcast)
+
+        val relatedEntities = request.relatedEntities.map {
+            ChatMessageRelatedEntity(
+                message = message,
+                relatedEntityType = it.relatedEntityType,
+                relatedEntityId = it.relatedEntityId
+            )
+        }
+
+        val media = request.media.map {
+            ChatMessageMedia(
+                message = message,
+                fileUrl = it.fileUrl,
+                fileName = it.fileName,
+                fileType = it.fileType,
+                fileSizeBytes = it.fileSizeBytes
+            )
+        }
+
+        message.relatedEntities = relatedEntities.toMutableList()
+        message.media = media.toMutableList()
+
+        val savedMessage = chatMessageRepository.save(message)
+
+        val messageDto = savedMessage.toChatMessageDto()
+        webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.USER_MESSAGE, messageDto)
+
+        return savedMessage
     }
 
-    fun getRoomMessages(roomId: Long): List<RoomMessage> {
-        return messageRepository.findRoomMessagesByRoomId(roomId)
+    @Transactional
+    fun reactToMessage(chatId: Long, username: String, request: ReactionRequest) {
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+        val message = chatMessageRepository.findById(request.messageId)
+            .orElseThrow { EntityNotFoundException("Message with id ${request.messageId} not found") }
+
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw EntityNotFoundException("User with username '$username' not found")
+
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
+
+        val existingReaction = messageReactionRepository.findByMessageIdAndUserUsernameValue(request.messageId, username)
+
+        var notificationMessage: Any
+        if (existingReaction != null) {
+            if (existingReaction.reactionEmoji == request.emoji) {
+                messageReactionRepository.delete(existingReaction)
+                notificationMessage = MessageReactionDto(
+                    messageId = request.messageId,
+                    username = username,
+                    emoji = null,
+                    reactionTime = null
+                )
+            } else {
+                existingReaction.reactionEmoji = request.emoji
+                val updatedMessageReaction = messageReactionRepository.save(existingReaction)
+                notificationMessage = MessageReactionDto(
+                    messageId = request.messageId,
+                    username = username,
+                    emoji = request.emoji,
+                    reactionTime = updatedMessageReaction.reactionTime,
+                )
+            }
+        } else {
+            val newReaction = messageReactionRepository.save(MessageReaction(
+                message = message,
+                user = user,
+                reactionEmoji = request.emoji
+            ))
+            notificationMessage = MessageReactionDto(
+                messageId = request.messageId,
+                username = username,
+                emoji = request.emoji,
+                reactionTime = newReaction.reactionTime,
+            )
+        }
+
+        webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.REACTION_UPDATE, notificationMessage)
+    }
+
+    @Transactional
+    fun editMessage(chatId: Long, username: String, request: EditMessageRequest) {
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+        val message = chatMessageRepository.findById(request.messageId)
+            .orElseThrow { EntityNotFoundException("Message with id ${request.messageId} not found") }
+
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw EntityNotFoundException("User with username '$username' not found")
+
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
+
+        if (message.user?.id != user.id && !member.role.isAtLeast(ChatMemberRole.ADMIN))
+            throw IllegalArgumentException("User is not the author of the message and he doesnt have that permission")
+
+
+        message.content = request.content
+        message.editedAt = LocalDateTime.now()
+
+        val relatedEntities = request.relatedEntities.map {
+            ChatMessageRelatedEntity(
+                message = message,
+                relatedEntityType = it.relatedEntityType,
+                relatedEntityId = it.relatedEntityId
+            )
+        }
+
+        val media = request.media.map {
+            ChatMessageMedia(
+                message = message,
+                fileUrl = it.fileUrl,
+                fileName = it.fileName,
+                fileType = it.fileType,
+                fileSizeBytes = it.fileSizeBytes
+            )
+        }
+
+        message.relatedEntities = relatedEntities.toMutableList()
+        message.media = media.toMutableList()
+
+        val savedMessage = chatMessageRepository.save(message)
+
+        val messageDto = savedMessage.toChatMessageDto()
+        webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.MESSAGE_UPDATE, messageDto)
+    }
+
+    @Transactional
+    fun deleteMessage(chatId: Long, username: String, request: DeleteMessageRequest) {
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+        val message = chatMessageRepository.findById(request.messageId)
+            .orElseThrow { EntityNotFoundException("Message with id ${request.messageId} not found") }
+
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw EntityNotFoundException("User with username '$username' not found")
+
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
+
+        if (message.user?.id != user.id && !member.role.isAtLeast(ChatMemberRole.MODERATOR))
+            throw IllegalArgumentException("User is not the author of the message and he doesnt have that permission")
+
+        message.isDeleted = true
+        message.editedAt = LocalDateTime.now()
+        chatMessageRepository.save(message)
+
+        webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.MESSAGE_DELETED,
+            DeleteMessageDto(
+                messageId = request.messageId,
+                deletedAt = message.editedAt!!
+            )
+        )
+    }
+
+    @Transactional
+    fun startTyping(chatId: Long, username: String) {
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw EntityNotFoundException("User with username '$username' not found")
+
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
+
+        webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.START_TYPING, TypingStatusDto(username))
+    }
+
+    @Transactional
+    fun stopTyping(chatId: Long, username: String) {
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw EntityNotFoundException("User with username '$username' not found")
+
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
+
+        webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.STOP_TYPING, TypingStatusDto(username))
+    }
+
+    @Transactional
+    fun readMessage(chatId: Long, username: String, request: ReadMessageRequest) {
+        val chat = chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+        val message = chatMessageRepository.findById(request.lastReadMessageId)
+            .orElseThrow { EntityNotFoundException("Message with id ${request.lastReadMessageId} not found") }
+
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw EntityNotFoundException("User with username '$username' not found")
+
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of the chat") }
+
+        member.lastReadMessage = message
+        member.lastReadAt = LocalDateTime.now()
+
+        chatMemberRepository.save(member)
+
+        webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.READ_LAST_MESSAGE,
+            UserReadLastMessageDto(
+                username = username,
+                lastReadMessageId = request.lastReadMessageId,
+                lastReadAt = member.lastReadAt!!
+            ))
     }
 
 }

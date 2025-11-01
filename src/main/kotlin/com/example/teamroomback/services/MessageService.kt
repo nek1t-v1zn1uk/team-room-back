@@ -1,6 +1,7 @@
 package com.example.teamroomback.services
 
-import com.example.teamroomback.dtos.ChatMessageDto
+import com.example.teamroomback.dtos.DeleteMessageDto
+import com.example.teamroomback.dtos.DeleteMessageRequest
 import com.example.teamroomback.dtos.MessageReactionDto
 import com.example.teamroomback.dtos.ReactionRequest
 import com.example.teamroomback.dtos.SendMessageRequest
@@ -13,6 +14,7 @@ import com.example.teamroomback.repositories.UserRepository
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class MessageService(
@@ -117,4 +119,28 @@ class MessageService(
 
         webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.REACTION_UPDATE, notificationMessage)
     }
+
+    @Transactional
+    fun deleteMessage(chatId: Long, username: String, request: DeleteMessageRequest) {
+        val message = chatMessageRepository.findById(request.messageId)
+            .orElseThrow { EntityNotFoundException("Message with id ${request.messageId} not found") }
+
+        val user = userRepository.findByUsernameValue(username)
+            ?: throw EntityNotFoundException("User with username '$username' not found")
+
+        if (message.user?.id != user.id)
+            throw IllegalArgumentException("User is not the author of the message")
+
+        message.isDeleted = true
+        message.editedAt = LocalDateTime.now()
+        chatMessageRepository.save(message)
+
+        webSocketNotificationService.sendChatMessage(chatId, WebSocketMessageType.MESSAGE_DELETED,
+            DeleteMessageDto(
+                messageId = request.messageId,
+                deletedAt = message.editedAt!!
+            )
+        )
+    }
+
 }

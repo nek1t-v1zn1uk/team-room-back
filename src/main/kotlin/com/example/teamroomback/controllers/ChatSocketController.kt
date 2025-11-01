@@ -1,5 +1,6 @@
 package com.example.teamroomback.controllers
 
+import com.example.teamroomback.dtos.DeleteMessageRequest
 import com.example.teamroomback.dtos.ReactionRequest
 import com.example.teamroomback.dtos.SendMessageRequest
 import com.example.teamroomback.services.MessageService
@@ -34,5 +35,16 @@ class ChatSocketController(
         val username = headerAccessor.user!!.name
 
         messageService.reactToMessage(chatId, username, request)
+    }
+
+    @MessageMapping("/chat/{chatId}/delete")
+    fun deleteMessage(
+        @DestinationVariable chatId: Long,
+        @Payload request: DeleteMessageRequest,
+        headerAccessor: SimpMessageHeaderAccessor
+    ) {
+        val username = headerAccessor.user!!.name
+
+        messageService.deleteMessage(chatId, username, request)
     }
 }

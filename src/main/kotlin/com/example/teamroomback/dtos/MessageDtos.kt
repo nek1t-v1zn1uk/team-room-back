@@ -35,6 +35,15 @@ data class ReactionRequest(
     val emoji: String
 )
 
+data class DeleteMessageRequest(
+    val messageId: Long
+)
+
+data class DeleteMessageDto(
+    val messageId: Long,
+    val deletedAt: LocalDateTime
+)
+
 data class ChatMessageDto(
     val id: Long,
     val chatId: Long,

@@ -55,6 +55,16 @@ data class TypingStatusDto(
     val username: String,
 )
 
+data class ReadMessageRequest(
+    val lastReadMessageId: Long,
+)
+
+data class UserReadLastMessageDto(
+    val username: String,
+    val lastReadMessageId: Long,
+    val lastReadAt: LocalDateTime
+)
+
 data class ChatMessageDto(
     val id: Long,
     val chatId: Long,

@@ -3,6 +3,7 @@ package com.example.teamroomback.controllers
 import com.example.teamroomback.dtos.DeleteMessageRequest
 import com.example.teamroomback.dtos.EditMessageRequest
 import com.example.teamroomback.dtos.ReactionRequest
+import com.example.teamroomback.dtos.ReadMessageRequest
 import com.example.teamroomback.dtos.SendMessageRequest
 import com.example.teamroomback.services.MessageService
 import org.springframework.messaging.handler.annotation.DestinationVariable
@@ -78,5 +79,16 @@ class ChatSocketController(
         val username = headerAccessor.user!!.name
 
         messageService.stopTyping(chatId, username)
+    }
+
+    @MessageMapping("/chat/{chatId}/read")
+    fun readMessage(
+        @DestinationVariable chatId: Long,
+        @Payload request: ReadMessageRequest,
+        headerAccessor: SimpMessageHeaderAccessor
+    ) {
+        val username = headerAccessor.user!!.name
+
+        messageService.readMessage(chatId, username, request)
     }
 }

@@ -31,5 +31,7 @@ enum class WebSocketMessageType {
     MESSAGE_DELETED,
 
     START_TYPING,
-    STOP_TYPING
+    STOP_TYPING,
+
+    READ_LAST_MESSAGE
 }

@@ -46,8 +46,13 @@ data class CreateGroupChatRequest(
     @field:NotBlank(message = "Chat name cannot be blank")
     @field:Size(min = 1, max = 255, message = "Chat name must be between 1 and 255 characters")
     val name: String,
-
+    val photoUrl: String? = null,
     val memberUsernames: List<String>
+)
+
+data class CreatePrivateChatRequest(
+    @field:NotBlank(message = "Username cannot be blank")
+    val username: String,
 )
 
 data class UpdateChatRequest(

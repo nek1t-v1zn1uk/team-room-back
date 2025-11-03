@@ -45,6 +45,22 @@ class ChatController(private val chatService: ChatService) {
         }
     }
 
+    @PostMapping("/private")
+    @Operation(summary = "Створити новий приватний чат", description = "Створення нового приватного чату між двома користувачами. Чат не має окремої назви та фото. Можна створити якщо такого чату ще немає або користувач видалив в себе цей чат. Якщо чат видалений лише в одного, то в одного чат користувача чат створюється, а в іншого і далі існує.", tags = ["Чати - керування чатами"])
+    @ApiResponse(responseCode = "201", description = "Чат успішно створено")
+    fun createPrivateChat(@Valid @RequestBody request: CreatePrivateChatRequest): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+            val chat = chatService.createPrivateChat(username, request)
+            ResponseEntity.status(HttpStatus.CREATED)
+                .body(CreateChatResponse(chat.id!!, "Private chat created successfully"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message ?: "Error creating chat"))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message ?: "Error creating chat"))
+        }
+    }
+
     @GetMapping("/{chatId}")
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
     @Operation(summary = "Отримати детальну інформацію про чат", description = "Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами"])

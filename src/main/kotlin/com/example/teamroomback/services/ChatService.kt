@@ -3,6 +3,7 @@ package com.example.teamroomback.services
 import com.example.teamroomback.dtos.*
 import com.example.teamroomback.entities.*
 import com.example.teamroomback.repositories.ChatMemberRepository
+import com.example.teamroomback.repositories.ChatMessageRepository
 import com.example.teamroomback.repositories.ChatRepository
 import com.example.teamroomback.repositories.UserRepository
 import jakarta.persistence.EntityNotFoundException
@@ -14,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional
 class ChatService(
     private val chatRepository: ChatRepository,
     private val chatMemberRepository: ChatMemberRepository,
-    private val userRepository: UserRepository
+    private val chatMessageRepository: ChatMessageRepository,
+    private val userRepository: UserRepository,
 ) {
 
     @Transactional(readOnly = true)
@@ -37,6 +39,7 @@ class ChatService(
 
         val chat = Chat(
             name = request.name,
+            photoUrl = request.photoUrl,
             type = ChatType.GROUP
         )
         val savedChat = chatRepository.save(chat)
@@ -51,6 +54,42 @@ class ChatService(
 
         chatMemberRepository.saveAll(members)
         return savedChat
+    }
+
+    @Transactional
+    fun createPrivateChat(creatorUsername: String, request: CreatePrivateChatRequest): Chat {
+        val firstUser = userRepository.findByUsernameValue(creatorUsername)
+            ?: throw EntityNotFoundException("Creator user not found")
+        val secondUser = userRepository.findByUsernameValue(request.username)
+            ?: throw EntityNotFoundException("Member user not found")
+
+        val existingChat = chatRepository.findPrivateChatByMembersUsernames(firstUser.username, secondUser.username)
+
+        if(existingChat == null) {
+            val chat = Chat(
+                type = ChatType.GROUP
+            )
+            val savedChat = chatRepository.save(chat)
+            val members = listOf(
+                ChatMember(chat = savedChat, user = firstUser, role = ChatMemberRole.MEMBER),
+                ChatMember(chat = savedChat, user = secondUser, role = ChatMemberRole.MEMBER)
+            )
+            chatMemberRepository.saveAll(members)
+            return savedChat
+        } else {
+            val firstMember = chatMemberRepository.findByChatIdAndUserUsernameValue(existingChat.id!!, firstUser.username)
+                .orElseThrow { EntityNotFoundException("Member not found") }
+            val secondMember = chatMemberRepository.findByChatIdAndUserUsernameValue(existingChat.id!!, secondUser.username)
+                .orElseThrow { EntityNotFoundException("Member not found") }
+
+            val lastMessage = chatMessageRepository.findTopByChatIdOrderByIdDesc(existingChat.id!!)
+
+            // if member HAS chat now
+            if(firstMember.lastAccessibleMessage == null || firstMember.lastAccessibleMessage!!.id!! < lastMessage!!.id!!)
+                throw IllegalArgumentException("Private chat already exists")
+            // if member DOESNT have chat now
+            return existingChat
+        }
     }
 
     @Transactional(readOnly = true)

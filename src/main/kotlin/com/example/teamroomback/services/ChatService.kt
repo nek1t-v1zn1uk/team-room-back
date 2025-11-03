@@ -85,7 +85,9 @@ class ChatService(
             val lastMessage = chatMessageRepository.findTopByChatIdOrderByIdDesc(existingChat.id!!)
 
             // if member HAS chat now
-            if(firstMember.lastAccessibleMessage == null || firstMember.lastAccessibleMessage!!.id!! < lastMessage!!.id!!)
+            if(firstMember.lastAccessibleMessage == null && lastMessage != null ||
+                (firstMember.lastAccessibleMessage != null && lastMessage != null && firstMember.lastAccessibleMessage!!.id!! < lastMessage.id!!)
+                )
                 throw IllegalArgumentException("Private chat already exists")
             // if member DOESNT have chat now
             return existingChat
@@ -248,6 +250,20 @@ class ChatService(
     }
 
     @Transactional
+    fun clearPrivateChat(chatId: Long, username: String, clearForBoth: Boolean = false) {
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of this chat.") }
+
+        if(clearForBoth) {
+            chatRepository.deleteById(chatId)
+        } else {
+            val lastMessage = chatMessageRepository.findTopByChatIdOrderByIdDesc(chatId)
+
+            member.lastAccessibleMessage = lastMessage
+        }
+    }
+
+    @Transactional
     fun transferOwnership(chatId: Long, newOwnerUsername: String, currentOwnerUsername: String) {
         val chat = chatRepository.findById(chatId)
             .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
@@ -267,6 +283,7 @@ class ChatService(
 
         chatMemberRepository.saveAll(listOf(currentOwnerMember, newOwnerMember))
     }
+
 
     fun getChatById(chatId: Long): Chat {
         return chatRepository.findById(chatId)

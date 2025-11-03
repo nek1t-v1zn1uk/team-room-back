@@ -225,6 +225,21 @@ class ChatController(private val chatService: ChatService) {
         }
     }
 
+    @DeleteMapping("/private/{chatId}/clear")
+    @ChatTypeAspect(ChatType.PRIVATE)
+    @Operation(summary = "Очистити приватний чат", description = "Очистити історію повідомлень для себе або для обох. Опцію потрібно вказати в query clearForBoth(за замовчуванням false). Чат повинний бути PRIVATE.", tags = ["Чати, учасники - керування учасниками чату", "Чати, приватні"])
+    @ApiResponse(responseCode = "200", description = "Чат успішно очищено")
+    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    fun clearPrivateChat(@PathVariable chatId: Long, @RequestParam clearForBoth: Boolean = false): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+            chatService.clearPrivateChat(chatId, username, clearForBoth)
+            ResponseEntity.ok(SimpleMessageResponse("You have successfully cleared the chat"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        }
+    }
+
     @PostMapping("/{chatId}/transfer-ownership")
     @ChatTypeAspect(ChatType.GROUP)
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'OWNER')")

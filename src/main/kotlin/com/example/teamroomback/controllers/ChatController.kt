@@ -264,4 +264,62 @@ class ChatController(private val chatService: ChatService) {
             ResponseEntity.status(HttpStatus.FORBIDDEN).body(SimpleMessageResponse(e.message ?: "Forbidden"))
         }
     }
+
+    @GetMapping("/{chatId}/messages")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
+    @Operation(summary = "Отримання повідомлень в чаті", description = "Є три query параметри: messageId - id повідомлення відносно якого шукати повідомлення, limitBefore - к-сть повідомлень перед повідомленням з messageId для повернення, limitAfter - к-сть повідомлень після повідомлення з messageId для повернення. limitBefore обов`язковий; якщо не вказаний messageId то виведуться повідомлення відносно останнього повідомлення в чаті; якщо limitAfter не вказаний то не буде виведено жодного повідомлення після. Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно повернено")
+    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    fun getMessagesInChat(
+        @PathVariable chatId: Long,
+        @RequestParam limitBefore: Int,
+        @RequestParam messageId: Long? = null,
+        @RequestParam limitAfter: Int = 0
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+            val messages = chatService.getMessagesInChat(chatId, messageId, limitBefore, limitAfter, username)
+
+            ResponseEntity.ok(messages)
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        }
+    }
+
+    @GetMapping("/{chatId}/messages/{messageId}")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
+    @Operation(summary = "Отримання повідомлення в чаті", description = "Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно повернено")
+    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    fun getMessageInChat(
+        @PathVariable chatId: Long,
+        @PathVariable messageId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+            val messages = chatService.getMessageInChat(chatId, messageId, username)
+
+            ResponseEntity.ok(messages)
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        }
+    }
+
+    @GetMapping("/{chatId}/messages/last")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
+    @Operation(summary = "Отримання останнього повідомлення в чаті", description = "Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно повернено")
+    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    fun getLastMessageInChat(
+        @PathVariable chatId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+            val messages = chatService.getMessageInChat(chatId, null, username)
+
+            ResponseEntity.ok(messages)
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        }
+    }
 }

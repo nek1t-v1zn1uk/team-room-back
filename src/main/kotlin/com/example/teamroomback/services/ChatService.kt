@@ -21,14 +21,26 @@ class ChatService(
 
     @Transactional(readOnly = true)
     fun getUserChats(username: String): List<UserChatDTO> {
-        return chatRepository.findChatsByUsername(username).map {
-            UserChatDTO(
-                id = it.id!!,
-                name = it.name,
-                photoUrl = it.photoUrl,
-                type = it.type,
-                courseId = it.course?.id
-            )
+        return chatRepository.findChatsByUsername(username)
+            .filter {
+                if(it.type == ChatType.PRIVATE) {
+                    val member = it.members.find { member -> member.user.username == username }!!
+                    if(memberHasAccessToChat(it, member))
+                        true
+                    else
+                        false
+                } else {
+                    true
+                }
+            }
+            .map {
+                UserChatDTO(
+                    id = it.id!!,
+                    name = it.name,
+                    photoUrl = it.photoUrl,
+                    type = it.type,
+                    courseId = it.course?.id
+                )
         }
     }
 
@@ -85,9 +97,7 @@ class ChatService(
             val lastMessage = chatMessageRepository.findTopByChatIdOrderByIdDesc(existingChat.id!!)
 
             // if member HAS chat now
-            if(firstMember.lastAccessibleMessage == null && lastMessage != null ||
-                (firstMember.lastAccessibleMessage != null && lastMessage != null && firstMember.lastAccessibleMessage!!.id!! < lastMessage.id!!)
-                )
+            if(memberHasAccessToChat(existingChat, firstMember))
                 throw IllegalArgumentException("Private chat already exists")
             // if member DOESNT have chat now
             return existingChat
@@ -288,5 +298,15 @@ class ChatService(
     fun getChatById(chatId: Long): Chat {
         return chatRepository.findById(chatId)
             .orElseThrow { EntityNotFoundException("Chat with id $chatId not found")  }
+    }
+
+    fun memberHasAccessToChat(chat: Chat, member: ChatMember): Boolean {
+        val lastMessage = chatMessageRepository.findTopByChatIdOrderByIdDesc(chat.id!!)
+        if(member.lastAccessibleMessage == null && lastMessage != null ||
+            (member.lastAccessibleMessage != null && lastMessage != null && member.lastAccessibleMessage!!.id!! < lastMessage.id!!)
+        )
+            return true
+
+        return false
     }
 }

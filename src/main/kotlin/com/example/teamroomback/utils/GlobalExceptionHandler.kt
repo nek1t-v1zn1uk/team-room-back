@@ -1,6 +1,7 @@
 package com.example.teamroomback.utils
 
 import com.example.teamroomback.dtos.ErrorResponse
+import jakarta.persistence.EntityNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -80,6 +81,21 @@ class GlobalExceptionHandler {
                 message = if(ex.message == "Access Denied") "Access Denied: You do not have the required permissions." else ex.message
             ),
             HttpStatus.FORBIDDEN
+        )
+        return response
+    }
+
+    @ExceptionHandler(EntityNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun handleEntityNotFoundException(ex: Exception): ResponseEntity<ErrorResponse> {
+        val response = ResponseEntity(
+            ErrorResponse(
+                timestamp = LocalDateTime.now(),
+                status = HttpStatus.NOT_FOUND.value(),
+                error = HttpStatus.NOT_FOUND.reasonPhrase,
+                message = if(ex.message == "Not Found") "Not Found: The requested resource was not found." else ex.message
+            ),
+            HttpStatus.NOT_FOUND
         )
         return response
     }

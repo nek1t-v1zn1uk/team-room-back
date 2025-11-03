@@ -226,6 +226,7 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @DeleteMapping("/private/{chatId}/clear")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'MEMBER')")
     @ChatTypeAspect(ChatType.PRIVATE)
     @Operation(summary = "Очистити приватний чат", description = "Очистити історію повідомлень для себе або для обох. Опцію потрібно вказати в query clearForBoth(за замовчуванням false). Чат повинний бути PRIVATE.", tags = ["Чати, учасники - керування учасниками чату", "Чати, приватні"])
     @ApiResponse(responseCode = "200", description = "Чат успішно очищено")

@@ -67,7 +67,7 @@ class ChatService(
 
         if(existingChat == null) {
             val chat = Chat(
-                type = ChatType.GROUP
+                type = ChatType.PRIVATE
             )
             val savedChat = chatRepository.save(chat)
             val members = listOf(
@@ -266,5 +266,10 @@ class ChatService(
         newOwnerMember.role = ChatMemberRole.OWNER
 
         chatMemberRepository.saveAll(listOf(currentOwnerMember, newOwnerMember))
+    }
+
+    fun getChatById(chatId: Long): Chat {
+        return chatRepository.findById(chatId)
+            .orElseThrow { EntityNotFoundException("Chat with id $chatId not found")  }
     }
 }

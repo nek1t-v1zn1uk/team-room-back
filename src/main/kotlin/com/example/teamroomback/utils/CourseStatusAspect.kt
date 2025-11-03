@@ -16,7 +16,6 @@ class CourseStatusAspect(
 
     @Before("@annotation(courseOpenStatus) && args(id, ..)")
     fun checkCourseStatus(joinPoint: JoinPoint, id: Long, courseOpenStatus: CourseOpenStatus) {
-        println("Is starts")
         if (courseService.getCourseById(id).isOpen != courseOpenStatus.requiredOpenStatus) {
             throw AccessDeniedException("Course must " +
                     (if(courseOpenStatus.requiredOpenStatus)"" else "not ") +

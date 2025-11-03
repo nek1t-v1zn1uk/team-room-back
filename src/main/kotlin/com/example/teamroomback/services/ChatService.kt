@@ -7,9 +7,11 @@ import com.example.teamroomback.repositories.ChatMessageRepository
 import com.example.teamroomback.repositories.ChatRepository
 import com.example.teamroomback.repositories.UserRepository
 import jakarta.persistence.EntityNotFoundException
+import org.springframework.data.domain.PageRequest
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import kotlin.math.max
 
 @Service
 class ChatService(
@@ -292,6 +294,61 @@ class ChatService(
         newOwnerMember.role = ChatMemberRole.OWNER
 
         chatMemberRepository.saveAll(listOf(currentOwnerMember, newOwnerMember))
+    }
+
+    @Transactional(readOnly = true)
+    fun getMessagesInChat(chatId: Long, messageId: Long?, limitBefore: Int, limitAfter: Int, username: String): List<ChatMessageDto> {
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of this chat.") }
+        val messages = if (messageId != null) {
+            val messagesBefore = if (limitBefore > 0) {
+                chatMessageRepository.findMessagesBefore(chatId, messageId, PageRequest.of(0, limitBefore))
+            } else {
+                emptyList()
+            }
+
+            val centerMessage = chatMessageRepository.findById(messageId).map { listOf(it) }.orElse(emptyList())
+
+            val messagesAfter = if (limitAfter > 0) {
+                chatMessageRepository.findMessagesAfter(chatId, messageId, PageRequest.of(0, limitAfter))
+            } else {
+                emptyList()
+            }
+
+            messagesBefore.reversed() + centerMessage + messagesAfter
+        } else {
+            val lastMessage = chatMessageRepository.findTopByChatIdOrderByIdDesc(chatId)
+                ?: return emptyList()
+            val messagesBefore = if (limitBefore > 0) {
+                chatMessageRepository.findMessagesBefore(chatId, lastMessage.id!!, PageRequest.of(0, limitBefore))
+            } else {
+                emptyList()
+            }
+            val centerMessage = chatMessageRepository.findById(lastMessage.id!!).map { listOf(it) }.orElse(emptyList())
+            messagesBefore.reversed() + centerMessage
+        }
+            .filter { member.lastAccessibleMessage == null || it.id!! > member.lastAccessibleMessage!!.id!! }
+
+        return messages.map { it.toChatMessageDto() }
+    }
+
+    fun getMessageInChat(chatId: Long, messageId: Long?, username: String): ChatMessageDto {
+        val message: ChatMessage = if (messageId == null) {
+            chatMessageRepository.findTopByChatIdOrderByIdDesc(chatId)
+                ?: throw EntityNotFoundException("Messages in chat with id $chatId not found")
+        } else {
+            chatMessageRepository.findById(messageId)
+                .orElseThrow { EntityNotFoundException("Message with id $messageId not found") }
+        }
+        if(message.chat.id != chatId)
+            throw EntityNotFoundException("Message with id $messageId not found")
+
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+            .orElseThrow { EntityNotFoundException("User is not a member of this chat.") }
+
+        if(member.lastAccessibleMessage == null || message.id!! > member.lastAccessibleMessage!!.id!!)
+            return message.toChatMessageDto()
+        throw EntityNotFoundException("Message with id $messageId not found")
     }
 
 

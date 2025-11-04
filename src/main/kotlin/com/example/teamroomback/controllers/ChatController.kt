@@ -269,7 +269,7 @@ class ChatController(private val chatService: ChatService) {
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
     @Operation(summary = "Отримання повідомлень в чаті", description = "Є три query параметри: messageId - id повідомлення відносно якого шукати повідомлення, limitBefore - к-сть повідомлень перед повідомленням з messageId для повернення, limitAfter - к-сть повідомлень після повідомлення з messageId для повернення. limitBefore обов`язковий; якщо не вказаний messageId то виведуться повідомлення відносно останнього повідомлення в чаті; якщо limitAfter не вказаний то не буде виведено жодного повідомлення після. Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
     @ApiResponse(responseCode = "200", description = "Повідомлення успішно повернено")
-    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
     fun getMessagesInChat(
         @PathVariable chatId: Long,
         @RequestParam limitBefore: Int,
@@ -290,7 +290,7 @@ class ChatController(private val chatService: ChatService) {
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
     @Operation(summary = "Отримання повідомлення в чаті", description = "Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
     @ApiResponse(responseCode = "200", description = "Повідомлення успішно повернено")
-    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
     fun getMessageInChat(
         @PathVariable chatId: Long,
         @PathVariable messageId: Long
@@ -322,4 +322,72 @@ class ChatController(private val chatService: ChatService) {
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
         }
     }
+
+
+    @GetMapping("/{chatId}/pinned")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
+    @Operation(summary = "Отримати всі закріплені повідомлення в чаті", description = "Не повертає ті повідомлення, до яких користувач не має доступу(очистив чат до прикладу). Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно закріплено")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
+    fun getPinnedMessage(
+        @PathVariable chatId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+
+            val pinnedMessages = chatService.getPinnedMessages(chatId, username)
+
+            ResponseEntity.ok(pinnedMessages)
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        }
+    }
+
+    @PostMapping("/{chatId}/pinned")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'PIN_MESSAGE')")
+    @Operation(summary = "Закріпити повідомлення в чаті", description = "Для не PRIVATE чатів потребує ролі не нижче MODERATOR.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно закріплено")
+    @ApiResponse(responseCode = "400", description = "Повідомлення уже прикріплене")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
+    fun pinMessage(
+        @PathVariable chatId: Long,
+        @RequestBody request: PinMessageRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+
+            val pinnedMessage = chatService.pinMessage(chatId, username, request)
+
+            ResponseEntity.ok(PinnedMessageResponse(pinnedMessage.message.id!!, "Message pinned successfully"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message ?: "Bad Request"))
+        }
+    }
+
+    @DeleteMapping("/{chatId}/pinned/{messageId}")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'PIN_MESSAGE')")
+    @Operation(summary = "Відкріпити повідомлення в чаті", description = "Для не PRIVATE чатів потребує ролі не нижче MODERATOR.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно відкріплено")
+    @ApiResponse(responseCode = "400", description = "Повідомлення і так не прикріплене")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
+    fun pinMessage(
+        @PathVariable chatId: Long,
+        @PathVariable messageId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+
+            val unpinnedMessage = chatService.unpinMessage(chatId, username, messageId)
+
+            ResponseEntity.ok(PinnedMessageResponse(unpinnedMessage.message.id!!, "Message unpinned successfully"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message ?: "Bad Request"))
+        }
+    }
+
+
 }

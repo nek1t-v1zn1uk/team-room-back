@@ -5,13 +5,13 @@ import com.example.teamroomback.entities.*
 import com.example.teamroomback.repositories.ChatMemberRepository
 import com.example.teamroomback.repositories.ChatMessageRepository
 import com.example.teamroomback.repositories.ChatRepository
+import com.example.teamroomback.repositories.PinnedMessageRepository
 import com.example.teamroomback.repositories.UserRepository
 import jakarta.persistence.EntityNotFoundException
 import org.springframework.data.domain.PageRequest
 import org.springframework.security.access.AccessDeniedException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import kotlin.math.max
 
 @Service
 class ChatService(
@@ -19,6 +19,7 @@ class ChatService(
     private val chatMemberRepository: ChatMemberRepository,
     private val chatMessageRepository: ChatMessageRepository,
     private val userRepository: UserRepository,
+    private val pinnedMessageRepository: PinnedMessageRepository
 ) {
 
     @Transactional(readOnly = true)
@@ -332,6 +333,7 @@ class ChatService(
         return messages.map { it.toChatMessageDto() }
     }
 
+    @Transactional(readOnly = true)
     fun getMessageInChat(chatId: Long, messageId: Long?, username: String): ChatMessageDto {
         val message: ChatMessage = if (messageId == null) {
             chatMessageRepository.findTopByChatIdOrderByIdDesc(chatId)
@@ -351,6 +353,44 @@ class ChatService(
         throw EntityNotFoundException("Message with id $messageId not found")
     }
 
+    @Transactional(readOnly = true)
+    fun getPinnedMessages(chatId: Long, username: String): List<PinnedMessageDto> {
+        val pinnedMessages = pinnedMessageRepository.findAllByChatId(chatId)
+        val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username).get()
+        return pinnedMessages.filter{ member.lastAccessibleMessage == null || it.message.id!! > member.lastAccessibleMessage!!.id!! }.map { it.toPinnedMessageDto() }
+    }
+
+    @Transactional
+    fun pinMessage(chatId: Long, username: String, request: PinMessageRequest): PinnedMessage {
+        val chat = chatRepository.findById(chatId).get()
+        val user = userRepository.findByUsernameValue(username)!!
+        val message = chatMessageRepository.findById(request.messageId).get()
+
+        val existingPinnedMessage = pinnedMessageRepository.findPinnedMessageByMessageId(message.id!!)
+        if(existingPinnedMessage != null)
+            throw IllegalArgumentException("This message is already pinned")
+
+        val pinnedMessage = PinnedMessage(
+            chat = chat,
+            message = message,
+            pinnedByUser = user
+        )
+
+        return pinnedMessageRepository.save(pinnedMessage)
+    }
+
+    @Transactional
+    fun unpinMessage(chatId: Long, username: String, messageId: Long): PinnedMessage {
+        val chat = chatRepository.findById(chatId).get()
+        val user = userRepository.findByUsernameValue(username)!!
+        val message = chatMessageRepository.findById(messageId).get()
+
+        val existingPinnedMessage = pinnedMessageRepository.findPinnedMessageByMessageId(message.id!!)
+            ?: throw IllegalArgumentException("This message is not pinned")
+
+        pinnedMessageRepository.delete(existingPinnedMessage)
+        return existingPinnedMessage
+    }
 
     fun getChatById(chatId: Long): Chat {
         return chatRepository.findById(chatId)

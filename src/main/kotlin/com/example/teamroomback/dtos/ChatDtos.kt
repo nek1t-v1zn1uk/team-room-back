@@ -1,6 +1,7 @@
 package com.example.teamroomback.dtos
 
 import com.example.teamroomback.entities.ChatMemberRole
+import com.example.teamroomback.entities.ChatMessageType
 import com.example.teamroomback.entities.ChatType
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
@@ -40,6 +41,15 @@ data class UserChatDTO(
     val photoUrl: String?,
     val type: ChatType,
     val courseId: Long?
+)
+
+data class PinnedMessageDto(
+    val messageId: Long,
+    val messageContent: String? = null,
+    val messageType: ChatMessageType,
+    val isDeleted: Boolean,
+    val pinnedAt: LocalDateTime,
+    val pinnedByUsername: String
 )
 
 data class CreateGroupChatRequest(
@@ -83,5 +93,11 @@ data class TransferOwnershipRequest(
     val newOwnerUsername: String
 )
 
+data class PinMessageRequest(
+    @field:NotBlank(message = "Message id cannot be blank")
+    val messageId: Long,
+)
+
 data class CreateChatResponse(val chatId: Long, val message: String)
 data class SimpleChatResponse(val chatId: Long, val message: String)
+data class PinnedMessageResponse(val messageId: Long, val message: String)

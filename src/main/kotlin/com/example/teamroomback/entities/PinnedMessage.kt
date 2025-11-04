@@ -1,5 +1,6 @@
 package com.example.teamroomback.entities
 
+import com.example.teamroomback.dtos.PinnedMessageDto
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import java.time.LocalDateTime
@@ -28,4 +29,15 @@ data class PinnedMessage(
     @CreationTimestamp
     @Column(name = "pinned_at", nullable = false, updatable = false)
     val pinnedAt: LocalDateTime? = null
-)
+) {
+    fun toPinnedMessageDto(): PinnedMessageDto {
+        return PinnedMessageDto(
+            messageId = message.id!!,
+            messageContent = message.content,
+            messageType = message.type,
+            isDeleted = message.isDeleted,
+            pinnedAt = pinnedAt!!,
+            pinnedByUsername = pinnedByUser.username
+        )
+    }
+}

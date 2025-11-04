@@ -18,8 +18,8 @@ class ChatTypeAspect(
 
     @Before("@annotation(chatType) && args(id, ..)")
     fun checkChatType(joinPoint: JoinPoint, id: Long, chatType: ChatTypeAspect) {
-        if (chatService.getChatById(id).type != chatType.requiredChatType) {
-            throw AccessDeniedException("Chat must be ${chatType.requiredChatType}, not ${chatService.getChatById(id).type}")
+        if (!chatType.requiredChatType.contains(chatService.getChatById(id).type)) {
+            throw AccessDeniedException("Chat must be ${chatType.requiredChatType.map { it.name }}, not ${chatService.getChatById(id).type}")
         }
     }
 }

@@ -80,9 +80,9 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @PutMapping("/{chatId}")
-    @ChatTypeAspect(ChatType.GROUP)
+    @ChatTypeAspect(ChatType.GROUP, ChatType.COURSE_CHAT, ChatType.MAIN_COURSE_CHAT)
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Повністю оновити чат (ім'я, фото)", description = "Потребує ролі не нижче ADMIN. Чат повинний бути GROUP.", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Повністю оновити чат (ім'я, фото)", description = "Потребує ролі не нижче ADMIN. Чат повинний бути GROUP/COURSE_CHAT.", tags = ["Чати - керування чатами", "Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
     @ApiResponse(responseCode = "200", description = "Чат оновлено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
@@ -96,13 +96,13 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @PatchMapping("/{chatId}")
-    @ChatTypeAspect(ChatType.GROUP)
+    @ChatTypeAspect(ChatType.GROUP, ChatType.COURSE_CHAT)
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Частково оновити чат (ім'я або фото)", description = "Потребує ролі не нижче ADMIN. Чат повинний бути GROUP.", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Частково оновити чат (ім'я або фото)", description = "Потребує ролі не нижче ADMIN. Чат повинний бути GROUP/COURSE_CHAT.", tags = ["Чати - керування чатами", "Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
     @ApiResponse(responseCode = "200", description = "Чат оновлено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
-    fun patchChat(@PathVariable chatId: Long, @RequestBody request: PatchChatRequest): ResponseEntity<Any> {
+    fun patchChat(@PathVariable chatId: Long, @Valid @RequestBody request: PatchChatRequest): ResponseEntity<Any> {
         return try {
             val patchedChat = chatService.patchChat(chatId, request)
             ResponseEntity.ok(SimpleChatResponse(patchedChat.id!!, "Chat patched successfully"))
@@ -112,9 +112,9 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @DeleteMapping("/{chatId}")
-    @ChatTypeAspect(ChatType.GROUP)
-    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'OWNER')")
-    @Operation(summary = "Видалити чат", description = "Потребує ролі не нижче OWNER. Чат повинний бути GROUP.", tags = ["Чати - керування чатами"])
+    @ChatTypeAspect(ChatType.GROUP, ChatType.COURSE_CHAT)
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'DELETE_CHAT')")
+    @Operation(summary = "Видалити чат", description = "Потребує ролі не нижче OWNER. Чат повинний бути GROUP/COURSE_CHAT.", tags = ["Чати - керування чатами", "Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
     @ApiResponse(responseCode = "200", description = "Чат видалено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
@@ -128,9 +128,9 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @GetMapping("/{chatId}/members")
-    @ChatTypeAspect(ChatType.GROUP)
+    @ChatTypeAspect(ChatType.GROUP, ChatType.COURSE_CHAT, ChatType.MAIN_COURSE_CHAT)
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
-    @Operation(summary = "Отримати список учасників чату", description = "Потребує ролі не нижче VIEWER. Чат повинний бути GROUP.", tags = ["Чати, учасники - керування учасниками чату"])
+    @Operation(summary = "Отримати список учасників чату", description = "Потребує ролі не нижче VIEWER. Чат повинний бути GROUP/COURSE_CHAT.", tags = ["Чати, учасники - керування учасниками чату", "Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
     @ApiResponse(responseCode = "200", description = "Список учасників")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     fun getChatMembers(@PathVariable chatId: Long): ResponseEntity<List<ChatMemberDetailsDTO>> {
@@ -174,7 +174,7 @@ class ChatController(private val chatService: ChatService) {
     fun updateMemberRole(
         @PathVariable chatId: Long,
         @PathVariable username: String,
-        @RequestBody request: UpdateChatMemberRoleRequest
+        @Valid @RequestBody request: UpdateChatMemberRoleRequest
     ): ResponseEntity<Any> {
         return try {
             val actorUsername = SecurityContextHolder.getContext().authentication.name
@@ -269,7 +269,7 @@ class ChatController(private val chatService: ChatService) {
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
     @Operation(summary = "Отримання повідомлень в чаті", description = "Є три query параметри: messageId - id повідомлення відносно якого шукати повідомлення, limitBefore - к-сть повідомлень перед повідомленням з messageId для повернення, limitAfter - к-сть повідомлень після повідомлення з messageId для повернення. limitBefore обов`язковий; якщо не вказаний messageId то виведуться повідомлення відносно останнього повідомлення в чаті; якщо limitAfter не вказаний то не буде виведено жодного повідомлення після. Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
     @ApiResponse(responseCode = "200", description = "Повідомлення успішно повернено")
-    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
     fun getMessagesInChat(
         @PathVariable chatId: Long,
         @RequestParam limitBefore: Int,
@@ -290,7 +290,7 @@ class ChatController(private val chatService: ChatService) {
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
     @Operation(summary = "Отримання повідомлення в чаті", description = "Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
     @ApiResponse(responseCode = "200", description = "Повідомлення успішно повернено")
-    @ApiResponse(responseCode = "404", description = "Чат або учасника не знайдено")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
     fun getMessageInChat(
         @PathVariable chatId: Long,
         @PathVariable messageId: Long
@@ -322,4 +322,72 @@ class ChatController(private val chatService: ChatService) {
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
         }
     }
+
+
+    @GetMapping("/{chatId}/pinned")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
+    @Operation(summary = "Отримати всі закріплені повідомлення в чаті", description = "Не повертає ті повідомлення, до яких користувач не має доступу(очистив чат до прикладу). Потребує ролі не нижче VIEWER.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно закріплено")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
+    fun getPinnedMessage(
+        @PathVariable chatId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+
+            val pinnedMessages = chatService.getPinnedMessages(chatId, username)
+
+            ResponseEntity.ok(pinnedMessages)
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        }
+    }
+
+    @PostMapping("/{chatId}/pinned")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'PIN_MESSAGE')")
+    @Operation(summary = "Закріпити повідомлення в чаті", description = "Для не PRIVATE чатів потребує ролі не нижче MODERATOR.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно закріплено")
+    @ApiResponse(responseCode = "400", description = "Повідомлення уже прикріплене")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
+    fun pinMessage(
+        @PathVariable chatId: Long,
+        @Valid @RequestBody request: PinMessageRequest
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+
+            val pinnedMessage = chatService.pinMessage(chatId, username, request)
+
+            ResponseEntity.ok(PinnedMessageResponse(pinnedMessage.message.id!!, "Message pinned successfully"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message ?: "Bad Request"))
+        }
+    }
+
+    @DeleteMapping("/{chatId}/pinned/{messageId}")
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'PIN_MESSAGE')")
+    @Operation(summary = "Відкріпити повідомлення в чаті", description = "Для не PRIVATE чатів потребує ролі не нижче MODERATOR.", tags = ["Чати - керування чатами", "Чати, повідомлення - керування повідомленнями чату"])
+    @ApiResponse(responseCode = "200", description = "Повідомлення успішно відкріплено")
+    @ApiResponse(responseCode = "400", description = "Повідомлення і так не прикріплене")
+    @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
+    fun pinMessage(
+        @PathVariable chatId: Long,
+        @PathVariable messageId: Long
+    ): ResponseEntity<Any> {
+        return try {
+            val username = SecurityContextHolder.getContext().authentication.name
+
+            val unpinnedMessage = chatService.unpinMessage(chatId, username, messageId)
+
+            ResponseEntity.ok(PinnedMessageResponse(unpinnedMessage.message.id!!, "Message unpinned successfully"))
+        } catch (e: EntityNotFoundException) {
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(SimpleMessageResponse(e.message ?: "Not Found"))
+        } catch (e: IllegalArgumentException) {
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(SimpleMessageResponse(e.message ?: "Bad Request"))
+        }
+    }
+
+
 }

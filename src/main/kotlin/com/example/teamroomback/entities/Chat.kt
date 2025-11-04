@@ -1,5 +1,6 @@
 package com.example.teamroomback.entities
 
+import com.example.teamroomback.dtos.UserChatDTO
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.JdbcTypeCode
@@ -39,7 +40,17 @@ data class Chat(
 
     @OneToMany(mappedBy = "chat", cascade = [CascadeType.ALL], orphanRemoval = true)
     val pinnedMessages: List<PinnedMessage> = listOf()
-)
+) {
+    fun toUserChatDTO(): UserChatDTO {
+        return UserChatDTO(
+            id = this.id!!,
+            name = this.name,
+            photoUrl = this.photoUrl,
+            type = this.type,
+            courseId = this.course?.id
+        )
+    }
+}
 
 enum class ChatType {
     PRIVATE,

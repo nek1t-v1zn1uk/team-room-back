@@ -4,6 +4,8 @@ import com.example.teamroomback.dtos.AddCourseMemberRequest
 import com.example.teamroomback.dtos.AddCourseMemberResponse
 import com.example.teamroomback.dtos.CourseDTO
 import com.example.teamroomback.dtos.CourseMemberDTO
+import com.example.teamroomback.dtos.CreateChatResponse
+import com.example.teamroomback.dtos.CreateCourseChatRequest
 import com.example.teamroomback.dtos.CreateCourseRequest
 import com.example.teamroomback.dtos.CreateCourseResponse
 import com.example.teamroomback.dtos.DeleteCourseMemberResponse
@@ -18,7 +20,6 @@ import com.example.teamroomback.dtos.PutCourseResponse
 import com.example.teamroomback.dtos.SimpleMessageResponse
 import com.example.teamroomback.dtos.UserCoursesResponse
 import com.example.teamroomback.services.CourseService
-import com.example.teamroomback.services.WebSocketNotificationService
 import com.example.teamroomback.validation.CourseOpenStatus
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -27,6 +28,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.persistence.EntityNotFoundException
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -387,7 +389,7 @@ class CourseController(
     @DeleteMapping("/{id}/members")
     @PreAuthorize("hasPermission(#id, 'LEADER')")
     @CourseOpenStatus
-    @Operation(summary = "Видалити учасника з курсу.", description = "Видаляє вказаного користувача зі списку учасників курсу. Потребує ролі не нижче LEADER. Курс повиннйи бути відкритим")
+    @Operation(summary = "Видалити учасника з курсу.", description = "Видаляє вказаного користувача зі списку учасників курсу. Потребує ролі не нижче LEADER. Курс повинний бути відкритим")
     @ApiResponse(responseCode = "200", description = "Учасника успішно видалено.", content = [Content(schema = Schema(implementation = DeleteCourseMemberResponse::class))])
     @ApiResponse(responseCode = "400", description = "Помилка (користувач не є учасником курсу).", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
     @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
@@ -430,7 +432,7 @@ class CourseController(
     @DeleteMapping("/{id}/leave")
     @PreAuthorize("hasPermission(#id, 'VIEWER')")
     @CourseOpenStatus
-    @Operation(summary = "Покинути курс.", description = "Покинути курс. Потребує ролі не нижче VIEWER. Курс повиннйи бути відкритим")
+    @Operation(summary = "Покинути курс.", description = "Покинути курс. Потребує ролі не нижче VIEWER. Курс повинний бути відкритим")
     @ApiResponse(responseCode = "200", description = "Учасника успішно видалено.", content = [Content(schema = Schema(implementation = DeleteCourseMemberResponse::class))])
     @ApiResponse(responseCode = "400", description = "Помилка (користувач не є учасником курсу).", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
     @ApiResponse(responseCode = "401", description = "Неавторизований.", content = [Content(schema = Schema(implementation = ErrorResponse::class))])
@@ -468,6 +470,42 @@ class CourseController(
                 )
             )
         }
+    }
+
+
+    @PostMapping("/{id}/chats")
+    @PreAuthorize("hasPermission(#id, 'PROFESSOR')")
+    @CourseOpenStatus
+    @Operation(summary = "Створити чат в курсі.", description = "Потребує ролі не нижче PROFESSOR. Курс повинний бути відкритим", tags=["Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
+    @ApiResponse(responseCode = "200", description = "Чат успішно створено.")
+    @ApiResponse(responseCode = "404", description = "Курс або користувача не знайдено.")
+    fun createChatInCourse(@PathVariable id: Long, @Valid @RequestBody request: CreateCourseChatRequest): ResponseEntity<Any>  {
+        return try{
+            val username = SecurityContextHolder.getContext().authentication.name
+            val chat = courseService.createChatInCourseDTO(id, username, request)
+            ResponseEntity.ok(
+                CreateChatResponse(
+                    chatId = chat.id!!,
+                    message = "Chat in course created successfully",
+                )
+            )
+        } catch (e: EntityNotFoundException){
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
+                SimpleMessageResponse(
+                    message = "Chat in course creation failed: ${e.message}.",
+                )
+            )
+        }
+    }
+
+    @GetMapping("/{id}/chats")
+    @PreAuthorize("hasPermission(#id, 'VIEWER')")
+    @Operation(summary = "Переглянути чати в курсі.", description = "Потребує ролі не нижче VIEWER.", tags=["Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
+    @ApiResponse(responseCode = "200", description = "Чати успішно поаернуто.")
+    fun getCourseChats(@PathVariable id: Long): ResponseEntity<Any>  {
+        val username = SecurityContextHolder.getContext().authentication.name
+        val chats = courseService.getCourseChatsDTOs(id)
+        return ResponseEntity.ok(chats)
     }
 
 }

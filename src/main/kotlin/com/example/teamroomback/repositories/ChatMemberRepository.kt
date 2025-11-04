@@ -12,4 +12,6 @@ interface ChatMemberRepository : JpaRepository<ChatMember, Long> {
     fun findAllByChatId(chatId: Long): List<ChatMember>
 
     fun deleteByChatIdAndUserUsernameValue(chatId: Long, username: String)
+
+    fun findChatsByChatCourseIdAndUserUsernameValue(chatId: Long, username: String): List<ChatMember>
 }

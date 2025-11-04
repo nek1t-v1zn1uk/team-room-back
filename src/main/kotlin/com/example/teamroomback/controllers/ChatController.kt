@@ -80,9 +80,9 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @PutMapping("/{chatId}")
-    @ChatTypeAspect(ChatType.GROUP)
+    @ChatTypeAspect(ChatType.GROUP, ChatType.COURSE_CHAT, ChatType.MAIN_COURSE_CHAT)
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Повністю оновити чат (ім'я, фото)", description = "Потребує ролі не нижче ADMIN. Чат повинний бути GROUP.", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Повністю оновити чат (ім'я, фото)", description = "Потребує ролі не нижче ADMIN. Чат повинний бути GROUP/COURSE_CHAT.", tags = ["Чати - керування чатами", "Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
     @ApiResponse(responseCode = "200", description = "Чат оновлено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
@@ -96,13 +96,13 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @PatchMapping("/{chatId}")
-    @ChatTypeAspect(ChatType.GROUP)
+    @ChatTypeAspect(ChatType.GROUP, ChatType.COURSE_CHAT)
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'ADMIN')")
-    @Operation(summary = "Частково оновити чат (ім'я або фото)", description = "Потребує ролі не нижче ADMIN. Чат повинний бути GROUP.", tags = ["Чати - керування чатами"])
+    @Operation(summary = "Частково оновити чат (ім'я або фото)", description = "Потребує ролі не нижче ADMIN. Чат повинний бути GROUP/COURSE_CHAT.", tags = ["Чати - керування чатами", "Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
     @ApiResponse(responseCode = "200", description = "Чат оновлено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
-    fun patchChat(@PathVariable chatId: Long, @RequestBody request: PatchChatRequest): ResponseEntity<Any> {
+    fun patchChat(@PathVariable chatId: Long, @Valid @RequestBody request: PatchChatRequest): ResponseEntity<Any> {
         return try {
             val patchedChat = chatService.patchChat(chatId, request)
             ResponseEntity.ok(SimpleChatResponse(patchedChat.id!!, "Chat patched successfully"))
@@ -112,9 +112,9 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @DeleteMapping("/{chatId}")
-    @ChatTypeAspect(ChatType.GROUP)
-    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'OWNER')")
-    @Operation(summary = "Видалити чат", description = "Потребує ролі не нижче OWNER. Чат повинний бути GROUP.", tags = ["Чати - керування чатами"])
+    @ChatTypeAspect(ChatType.GROUP, ChatType.COURSE_CHAT)
+    @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'DELETE_CHAT')")
+    @Operation(summary = "Видалити чат", description = "Потребує ролі не нижче OWNER. Чат повинний бути GROUP/COURSE_CHAT.", tags = ["Чати - керування чатами", "Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
     @ApiResponse(responseCode = "200", description = "Чат видалено")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     @ApiResponse(responseCode = "404", description = "Чат не знайдено")
@@ -128,9 +128,9 @@ class ChatController(private val chatService: ChatService) {
     }
 
     @GetMapping("/{chatId}/members")
-    @ChatTypeAspect(ChatType.GROUP)
+    @ChatTypeAspect(ChatType.GROUP, ChatType.COURSE_CHAT, ChatType.MAIN_COURSE_CHAT)
     @PreAuthorize("@chatPermissionEvaluator.hasPermission(authentication, #chatId, 'VIEWER')")
-    @Operation(summary = "Отримати список учасників чату", description = "Потребує ролі не нижче VIEWER. Чат повинний бути GROUP.", tags = ["Чати, учасники - керування учасниками чату"])
+    @Operation(summary = "Отримати список учасників чату", description = "Потребує ролі не нижче VIEWER. Чат повинний бути GROUP/COURSE_CHAT.", tags = ["Чати, учасники - керування учасниками чату", "Курси, чати - керування чатами курсів", "Чати, курси - керування чатами курсів"])
     @ApiResponse(responseCode = "200", description = "Список учасників")
     @ApiResponse(responseCode = "403", description = "Доступ заборонено")
     fun getChatMembers(@PathVariable chatId: Long): ResponseEntity<List<ChatMemberDetailsDTO>> {
@@ -174,7 +174,7 @@ class ChatController(private val chatService: ChatService) {
     fun updateMemberRole(
         @PathVariable chatId: Long,
         @PathVariable username: String,
-        @RequestBody request: UpdateChatMemberRoleRequest
+        @Valid @RequestBody request: UpdateChatMemberRoleRequest
     ): ResponseEntity<Any> {
         return try {
             val actorUsername = SecurityContextHolder.getContext().authentication.name
@@ -351,7 +351,7 @@ class ChatController(private val chatService: ChatService) {
     @ApiResponse(responseCode = "404", description = "Чат, повідомлення або учасника не знайдено")
     fun pinMessage(
         @PathVariable chatId: Long,
-        @RequestBody request: PinMessageRequest
+        @Valid @RequestBody request: PinMessageRequest
     ): ResponseEntity<Any> {
         return try {
             val username = SecurityContextHolder.getContext().authentication.name

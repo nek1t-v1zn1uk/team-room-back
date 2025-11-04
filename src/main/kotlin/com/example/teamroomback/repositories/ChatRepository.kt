@@ -16,4 +16,9 @@ interface ChatRepository : JpaRepository<Chat, Long> {
         AND m2.user.usernameValue = :secondUsername
     """)
     fun findPrivateChatByMembersUsernames(firstUsername: String, secondUsername: String): Chat?
+
+    fun findChatsByCourseId(courseId: Long): List<Chat>
+
+    @Query("SELECT c FROM Chat c WHERE c.type = 'MAIN_COURSE_CHAT' AND c.course.id = :courseId")
+    fun findMainChatByCourseId(courseId: Long): Chat
 }

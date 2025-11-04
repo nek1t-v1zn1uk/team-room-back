@@ -37,6 +37,17 @@ class ChatPermissionEvaluator(
                 ChatType.PRIVATE -> member.role.isAtLeast(ChatMemberRole.MEMBER)
                 else -> false
             }
+        } else if (permission == "DELETE_CHAT") {
+            val chat = chatRepository.findById(chatId)
+                .orElseThrow { EntityNotFoundException("Chat with id $chatId not found") }
+            val member = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, username)
+                .orElse(null) ?: return false
+
+            return when (chat.type) {
+                ChatType.GROUP -> member.role.isAtLeast(ChatMemberRole.OWNER)
+                ChatType.COURSE_CHAT -> member.role.isAtLeast(ChatMemberRole.ADMIN)
+                else -> false
+            }
         }
 
         // logic for simple checking for minimum role

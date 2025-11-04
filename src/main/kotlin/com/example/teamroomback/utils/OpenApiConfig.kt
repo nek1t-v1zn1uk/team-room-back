@@ -21,7 +21,10 @@ import org.springdoc.core.customizers.OpenApiCustomizer
         Tag(name = "Користувач"),
         Tag(name = "Профіль користувача"),
         Tag(name = "Хмарне сховище"),
+
         Tag(name = "Курси"),
+        Tag(name = "Курси, чати - керування чатами курсів"),
+
         Tag(name = "Матеріали курсу"),
 
         Tag(name = "Завдання курсу"),
@@ -33,6 +36,7 @@ import org.springdoc.core.customizers.OpenApiCustomizer
         Tag(name = "Чати - керування чатами"),
         Tag(name = "Чати, учасники - керування учасниками чату"),
         Tag(name = "Чати, приватні"),
+        Tag(name = "Чати, курси - керування чатами курсів"),
     ]
 )
 @SecurityScheme(
@@ -57,6 +61,7 @@ class SwaggerTagOrderConfig {
             "Профіль користувача",
             "Хмарне сховище",
             "Курси",
+            "Курси, чати - керування чатами курсів",
             "Матеріали курсу",
             "Завдання курсу",
             "Завдання - керування завданнями курсу",
@@ -66,6 +71,7 @@ class SwaggerTagOrderConfig {
             "Чати - керування чатами",
             "Чати, учасники - керування учасниками чату",
             "Чати, приватні",
+            "Чати, курси - керування чатами курсів",
         )
 
         return OpenApiCustomizer { openApi ->

@@ -1,17 +1,28 @@
 package com.example.teamroomback.services
 
 import com.example.teamroomback.dtos.AddCourseMemberRequest
+import com.example.teamroomback.dtos.CreateCourseChatRequest
 import com.example.teamroomback.dtos.CreateCourseRequest
 import com.example.teamroomback.dtos.PatchCourseRequest
 import com.example.teamroomback.dtos.PutCourseMemberRoleRequest
 import com.example.teamroomback.dtos.PutCourseRequest
+import com.example.teamroomback.dtos.UserChatDTO
+import com.example.teamroomback.entities.Chat
+import com.example.teamroomback.entities.ChatMember
+import com.example.teamroomback.entities.ChatMemberRole
+import com.example.teamroomback.entities.ChatType
 import com.example.teamroomback.entities.Course
 import com.example.teamroomback.entities.CourseMember
 import com.example.teamroomback.entities.CourseMemberRole
+import com.example.teamroomback.repositories.ChatMemberRepository
+import com.example.teamroomback.repositories.ChatMessageRepository
+import com.example.teamroomback.repositories.ChatRepository
 import com.example.teamroomback.repositories.CourseMemberRepository
 import com.example.teamroomback.repositories.CourseRepository
 import com.example.teamroomback.repositories.UserRepository
+import jakarta.persistence.EntityNotFoundException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import javax.management.InstanceNotFoundException
 
 @Service
@@ -20,7 +31,10 @@ class CourseService(
     private val courseMemberRepository: CourseMemberRepository,
     private val userRepository: UserRepository,
     private val profileService: ProfileService,
-    private val webSocketNotificationService: WebSocketNotificationService
+    private val webSocketNotificationService: WebSocketNotificationService,
+    private val chatRepository: ChatRepository,
+    private val chatMemberRepository: ChatMemberRepository,
+    private val chatMessageRepository: ChatMessageRepository,
 ) {
 
     fun getRoleInCourse(username: String, courseId: Long): CourseMemberRole? {
@@ -43,6 +57,16 @@ class CourseService(
                 role = CourseMemberRole.OWNER,
             )
         )
+
+        val mainCourseChat = Chat(
+            name = null,
+            photoUrl = null,
+            type = ChatType.MAIN_COURSE_CHAT,
+            course = course
+        )
+        val savedChat = chatRepository.save(mainCourseChat)
+        val member = ChatMember(chat = savedChat, user = user, role = ChatMemberRole.OWNER)
+        chatMemberRepository.save(member)
 
         return course
     }
@@ -152,6 +176,21 @@ class CourseService(
             )
         )
 
+
+        val chats = chatRepository.findChatsByCourseId(courseId)
+        val chatRole = when(courseMember.role) {
+            CourseMemberRole.OWNER -> ChatMemberRole.OWNER
+            CourseMemberRole.PROFESSOR -> ChatMemberRole.ADMIN
+            CourseMemberRole.LEADER -> ChatMemberRole.MODERATOR
+            CourseMemberRole.STUDENT -> ChatMemberRole.MEMBER
+            CourseMemberRole.VIEWER -> ChatMemberRole.VIEWER
+        }
+        for(chat in chats) {
+            val member = ChatMember(chat = chat, user = user, role = chatRole)
+            chatMemberRepository.save(member)
+        }
+
+
         webSocketNotificationService.notifyUserAboutJoiningToCourse(courseMember)
         for(member in courseMember.course.courseMembers) {
             if(member.id != courseMember.id)
@@ -183,6 +222,21 @@ class CourseService(
         changingCourseMember.role = request.role
         val newMember = courseMemberRepository.save(changingCourseMember)
 
+
+        val membershipInCourseChats = chatMemberRepository.findChatsByChatCourseIdAndUserUsernameValue(courseId, request.username)
+        val chatRole = when(newMember.role) {
+            CourseMemberRole.OWNER -> ChatMemberRole.OWNER
+            CourseMemberRole.PROFESSOR -> ChatMemberRole.ADMIN
+            CourseMemberRole.LEADER -> ChatMemberRole.MODERATOR
+            CourseMemberRole.STUDENT -> ChatMemberRole.MEMBER
+            CourseMemberRole.VIEWER -> ChatMemberRole.VIEWER
+        }
+        for(member in membershipInCourseChats) {
+            member.role = chatRole
+            chatMemberRepository.save(member)
+        }
+
+
         webSocketNotificationService.notifyUserAboutRoleChangeInCourse(newMember, oldRole.name)
         for(member in newMember.course.courseMembers) {
             if(member.id != newMember.id)
@@ -203,6 +257,13 @@ class CourseService(
 
         courseMemberRepository.delete(member)
 
+
+        val membershipInChat = chatMemberRepository.findChatsByChatCourseIdAndUserUsernameValue(courseId, memberUsername)
+        for(member in membershipInChat) {
+            chatMemberRepository.delete(member)
+        }
+
+
         webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
         for(m in member.course.courseMembers) {
             if(m.id != member.id)
@@ -216,11 +277,56 @@ class CourseService(
 
         courseMemberRepository.delete(member)
 
+
+        val membershipInCourseChats = chatMemberRepository.findChatsByChatCourseIdAndUserUsernameValue(courseId, username)
+        for(member in membershipInCourseChats) {
+            chatMemberRepository.delete(member)
+        }
+
+
         webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
         for(m in member.course.courseMembers) {
             if(m.id != member.id)
                 webSocketNotificationService.notifyUserAboutCourseUpdate(m)
         }
+    }
+
+
+    @Transactional
+    fun createChatInCourseDTO(courseId: Long, creatorUsername: String, request: CreateCourseChatRequest): Chat {
+        val creator = userRepository.findByUsernameValue(creatorUsername)
+            ?: throw EntityNotFoundException("Creator user not found")
+        val course = courseRepository.findCourseById(courseId)
+            ?: throw EntityNotFoundException("Course not found")
+
+        val chat = Chat(
+            name = request.name,
+            photoUrl = request.photoUrl,
+            type = ChatType.COURSE_CHAT,
+            course = course
+        )
+        val savedChat = chatRepository.save(chat)
+
+        val members = course.courseMembers.map { courseMember ->
+            val user = userRepository.findByUsernameValue(courseMember.user.username)!!
+            val role = when(courseMember.role) {
+                CourseMemberRole.OWNER -> ChatMemberRole.OWNER
+                CourseMemberRole.PROFESSOR -> ChatMemberRole.ADMIN
+                CourseMemberRole.LEADER -> ChatMemberRole.MODERATOR
+                CourseMemberRole.STUDENT -> ChatMemberRole.MEMBER
+                CourseMemberRole.VIEWER -> ChatMemberRole.VIEWER
+            }
+            ChatMember(chat = savedChat, user = user, role = role)
+        }
+
+        chatMemberRepository.saveAll(members)
+        return savedChat
+    }
+
+    @Transactional(readOnly = true)
+    fun getCourseChatsDTOs(chatId: Long): List<UserChatDTO> {
+        val chats = chatRepository.findChatsByCourseId(chatId)
+        return chats.map { it.toUserChatDTO() }
     }
 
 }

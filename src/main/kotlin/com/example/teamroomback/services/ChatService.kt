@@ -72,6 +72,30 @@ class ChatService(
     }
 
     @Transactional
+    fun createCourseChat(creatorUsername: String, request: CreateGroupChatRequest): Chat {
+        val creator = userRepository.findByUsernameValue(creatorUsername)
+            ?: throw EntityNotFoundException("Creator user not found")
+
+        val chat = Chat(
+            name = request.name,
+            photoUrl = request.photoUrl,
+            type = ChatType.GROUP
+        )
+        val savedChat = chatRepository.save(chat)
+
+        val memberUsernames = (request.memberUsernames + creatorUsername).toSet()
+        val members = memberUsernames.map { username ->
+            val user = userRepository.findByUsernameValue(username)
+                ?: throw EntityNotFoundException("User with username '$username' not found.")
+            val role = if (user.id == creator.id) ChatMemberRole.OWNER else ChatMemberRole.MEMBER
+            ChatMember(chat = savedChat, user = user, role = role)
+        }
+
+        chatMemberRepository.saveAll(members)
+        return savedChat
+    }
+
+    @Transactional
     fun createPrivateChat(creatorUsername: String, request: CreatePrivateChatRequest): Chat {
         val firstUser = userRepository.findByUsernameValue(creatorUsername)
             ?: throw EntityNotFoundException("Creator user not found")

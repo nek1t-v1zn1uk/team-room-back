@@ -156,3 +156,10 @@ data class DeleteCourseMemberResponse(
     @field:Schema(description = "Повідомлення про результат.", example = "Користувача було успішно видалено з курсу.")
     val message: String
 )
+
+data class CreateCourseChatRequest(
+    @field:NotBlank(message = "Chat name cannot be blank")
+    @field:Size(min = 1, max = 255, message = "Chat name must be between 1 and 255 characters")
+    val name: String,
+    val photoUrl: String? = null,
+)

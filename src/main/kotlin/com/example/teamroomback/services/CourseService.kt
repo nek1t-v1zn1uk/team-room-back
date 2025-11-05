@@ -10,6 +10,8 @@ import com.example.teamroomback.dtos.UserChatDTO
 import com.example.teamroomback.entities.Chat
 import com.example.teamroomback.entities.ChatMember
 import com.example.teamroomback.entities.ChatMemberRole
+import com.example.teamroomback.entities.ChatMessage
+import com.example.teamroomback.entities.ChatMessageType
 import com.example.teamroomback.entities.ChatType
 import com.example.teamroomback.entities.Course
 import com.example.teamroomback.entities.CourseMember
@@ -110,6 +112,8 @@ class CourseService(
         course.isOpen = true
         courseRepository.save(course)
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.COURSE_OPENED)
+
         for(member in course.courseMembers) {
             webSocketNotificationService.notifyUserAboutCourseUpdate(member)
         }
@@ -120,6 +124,8 @@ class CourseService(
             ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
         course.isOpen = false
         courseRepository.save(course)
+
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.COURSE_CLOSED)
 
         for(member in course.courseMembers) {
             webSocketNotificationService.notifyUserAboutCourseUpdate(member)
@@ -190,6 +196,11 @@ class CourseService(
             chatMemberRepository.save(member)
         }
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.USER_JOINED_TO_CHAT,
+            content = mapOf(
+                "username" to user.username,
+            )
+        )
 
         webSocketNotificationService.notifyUserAboutJoiningToCourse(courseMember)
         for(member in courseMember.course.courseMembers) {
@@ -263,6 +274,11 @@ class CourseService(
             chatMemberRepository.delete(member)
         }
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.USER_LEFT_FROM_CHAT,
+            content = mapOf(
+                "username" to member.user.username,
+            )
+        )
 
         webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
         for(m in member.course.courseMembers) {
@@ -283,6 +299,11 @@ class CourseService(
             chatMemberRepository.delete(member)
         }
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.USER_LEFT_FROM_CHAT,
+            content = mapOf(
+                "username" to member.user.username,
+            )
+        )
 
         webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
         for(m in member.course.courseMembers) {

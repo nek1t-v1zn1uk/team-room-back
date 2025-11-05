@@ -19,7 +19,8 @@ class ChatService(
     private val chatMemberRepository: ChatMemberRepository,
     private val chatMessageRepository: ChatMessageRepository,
     private val userRepository: UserRepository,
-    private val pinnedMessageRepository: PinnedMessageRepository
+    private val pinnedMessageRepository: PinnedMessageRepository,
+    private val webSocketNotificationService: WebSocketNotificationService
 ) {
 
     @Transactional(readOnly = true)
@@ -68,30 +69,11 @@ class ChatService(
         }
 
         chatMemberRepository.saveAll(members)
-        return savedChat
-    }
 
-    @Transactional
-    fun createCourseChat(creatorUsername: String, request: CreateGroupChatRequest): Chat {
-        val creator = userRepository.findByUsernameValue(creatorUsername)
-            ?: throw EntityNotFoundException("Creator user not found")
-
-        val chat = Chat(
-            name = request.name,
-            photoUrl = request.photoUrl,
-            type = ChatType.GROUP
-        )
-        val savedChat = chatRepository.save(chat)
-
-        val memberUsernames = (request.memberUsernames + creatorUsername).toSet()
-        val members = memberUsernames.map { username ->
-            val user = userRepository.findByUsernameValue(username)
-                ?: throw EntityNotFoundException("User with username '$username' not found.")
-            val role = if (user.id == creator.id) ChatMemberRole.OWNER else ChatMemberRole.MEMBER
-            ChatMember(chat = savedChat, user = user, role = role)
+        members.forEach {
+            webSocketNotificationService.notifyUserAboutJoiningToChat(it)
         }
 
-        chatMemberRepository.saveAll(members)
         return savedChat
     }
 
@@ -114,6 +96,11 @@ class ChatService(
                 ChatMember(chat = savedChat, user = secondUser, role = ChatMemberRole.MEMBER)
             )
             chatMemberRepository.saveAll(members)
+
+            members.forEach {
+                webSocketNotificationService.notifyUserAboutJoiningToChat(it)
+            }
+
             return savedChat
         } else {
             val firstMember = chatMemberRepository.findByChatIdAndUserUsernameValue(existingChat.id!!, firstUser.username)
@@ -127,6 +114,7 @@ class ChatService(
             if(memberHasAccessToChat(existingChat, firstMember))
                 throw IllegalArgumentException("Private chat already exists")
             // if member DOESNT have chat now
+            webSocketNotificationService.notifyUserAboutJoiningToChat(firstMember)
             return existingChat
         }
     }
@@ -162,7 +150,13 @@ class ChatService(
         chat.name = request.name
         chat.photoUrl = request.photoUrl
 
-        return chatRepository.save(chat)
+        val newChat = chatRepository.save(chat)
+
+        chat.members.forEach {
+            webSocketNotificationService.notifyUserAboutChatUpdate(it)
+        }
+
+        return newChat
     }
 
     @Transactional
@@ -173,7 +167,13 @@ class ChatService(
         request.name?.let { chat.name = it }
         request.photoUrl?.let { chat.photoUrl = it }
 
-        return chatRepository.save(chat)
+        val newChat = chatRepository.save(chat)
+
+        chat.members.forEach {
+            webSocketNotificationService.notifyUserAboutChatUpdate(it)
+        }
+
+        return newChat
     }
 
     @Transactional
@@ -181,7 +181,13 @@ class ChatService(
         if (!chatRepository.existsById(chatId)) {
             throw EntityNotFoundException("Chat with id $chatId not found")
         }
+
+        val chatMembers = chatMemberRepository.findAllByChatId(chatId)
         chatRepository.deleteById(chatId)
+
+        chatMembers.forEach {
+            webSocketNotificationService.notifyUserAboutChatDeletion(it)
+        }
     }
 
     @Transactional(readOnly = true)
@@ -220,13 +226,27 @@ class ChatService(
             throw AccessDeniedException("Cannot assign OWNER role directly.")
         }
 
-        val newMember = ChatMember(
-            chat = chat,
-            user = user,
-            role = request.role
+        val newMember = chatMemberRepository.save(
+            ChatMember(
+                chat = chat,
+                user = user,
+                role = request.role
+            )
         )
 
-        return chatMemberRepository.save(newMember)
+        chat.members.forEach {
+            webSocketNotificationService.notifyUserAboutChatUpdate(it)
+        }
+
+        webSocketNotificationService.notifyUserAboutJoiningToChat(newMember)
+
+        webSocketNotificationService.saveAndSendSystemMessage(chat.id!!, ChatMessageType.USER_JOINED_TO_CHAT,
+            content = mapOf(
+                "username" to user.username,
+            )
+        )
+
+        return newMember
     }
 
     @Transactional
@@ -251,8 +271,17 @@ class ChatService(
             }
         }
 
+        val role = targetMember.role
         targetMember.role = newRole
-        return chatMemberRepository.save(targetMember)
+        val newMember = chatMemberRepository.save(targetMember)
+
+        newMember.chat.members.forEach {
+            webSocketNotificationService.notifyUserAboutChatUpdate(it)
+        }
+
+        webSocketNotificationService.notifyUserAboutRoleChangeInChat(newMember, role.name)
+
+        return newMember
     }
 
     @Transactional
@@ -272,6 +301,18 @@ class ChatService(
         }
 
         chatMemberRepository.delete(targetMember)
+
+        webSocketNotificationService.notifyUserAboutRemovalFromChat(targetMember)
+
+        chatRepository.findById(chatId).get().members.forEach {
+            webSocketNotificationService.notifyUserAboutChatUpdate(it)
+        }
+
+        webSocketNotificationService.saveAndSendSystemMessage(chatId, ChatMessageType.USER_LEFT_FROM_CHAT,
+            content = mapOf(
+                "username" to targetMember.user.username,
+            )
+        )
     }
 
     @Transactional
@@ -284,6 +325,14 @@ class ChatService(
         }
 
         chatMemberRepository.delete(member)
+
+        webSocketNotificationService.notifyUserAboutRemovalFromChat(member)
+
+        webSocketNotificationService.saveAndSendSystemMessage(chatId, ChatMessageType.USER_LEFT_FROM_CHAT,
+            content = mapOf(
+                "username" to member.user.username,
+            )
+        )
     }
 
     @Transactional
@@ -293,10 +342,16 @@ class ChatService(
 
         if(clearForBoth) {
             chatRepository.deleteById(chatId)
+
+            chatMemberRepository.findAllByChatId(chatId).forEach {
+                webSocketNotificationService.notifyUserAboutChatDeletion(it)
+            }
         } else {
             val lastMessage = chatMessageRepository.findTopByChatIdOrderByIdDesc(chatId)
 
             member.lastAccessibleMessage = lastMessage
+
+            webSocketNotificationService.notifyUserAboutChatDeletion(member)
         }
     }
 
@@ -315,10 +370,18 @@ class ChatService(
         val newOwnerMember = chatMemberRepository.findByChatIdAndUserUsernameValue(chatId, newOwnerUsername)
             .orElseThrow { EntityNotFoundException("New owner is not a member of the chat.") }
 
+        val oldRole = newOwnerMember.role
         currentOwnerMember.role = ChatMemberRole.ADMIN
         newOwnerMember.role = ChatMemberRole.OWNER
 
         chatMemberRepository.saveAll(listOf(currentOwnerMember, newOwnerMember))
+
+        chat.members.forEach {
+            webSocketNotificationService.notifyUserAboutChatUpdate(it)
+        }
+
+        webSocketNotificationService.notifyUserAboutRoleChangeInChat(currentOwnerMember, "OWNER")
+        webSocketNotificationService.notifyUserAboutRoleChangeInChat(newOwnerMember, oldRole.name)
     }
 
     @Transactional(readOnly = true)

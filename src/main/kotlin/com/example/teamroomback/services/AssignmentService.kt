@@ -23,7 +23,8 @@ class AssignmentService(
     private val assignmentResponseMediaRepository: AssignmentResponseMediaRepository,
     private val userRepository: UserRepository,
     private val courseRepository: CourseRepository,
-    private val webSocketNotificationService: WebSocketNotificationService
+    private val webSocketNotificationService: WebSocketNotificationService,
+    private val deadlineNotificationService: DeadlineNotificationService
 ) {
 
     private fun postSystemMessageAboutAssignmentUpdate(assignment: Assignment) {
@@ -48,6 +49,8 @@ class AssignmentService(
             maxGrade = request.maxGrade,
             deadline = request.deadline
         ))
+
+        deadlineNotificationService.scheduleNotifications(assignment)
 
         webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.ASSIGNMENT_CREATED,
             ChatMessageRelatedEntityType.ASSIGNMENT, assignment.id!!,
@@ -86,6 +89,8 @@ class AssignmentService(
 
         val newAssignment = assignmentRepository.save(assignment)
 
+        deadlineNotificationService.scheduleNotifications(assignment)
+
         postSystemMessageAboutAssignmentUpdate(newAssignment)
 
         for(member in newAssignment.course.courseMembers) {
@@ -106,6 +111,9 @@ class AssignmentService(
 
         val newAssignment = assignmentRepository.save(assignment)
 
+        if(request.deadline != null)
+            deadlineNotificationService.scheduleNotifications(assignment)
+
         postSystemMessageAboutAssignmentUpdate(newAssignment)
 
         for(member in newAssignment.course.courseMembers) {
@@ -119,6 +127,8 @@ class AssignmentService(
     fun deleteAssignment(assignmentId: Long): Assignment {
         val assignment = getAssignment(assignmentId)
         assignmentRepository.delete(assignment)
+
+        deadlineNotificationService.cancelNotifications(assignment.id!!)
 
         webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(assignment.course.id!!, ChatMessageType.ASSIGNMENT_DELETED,
             ChatMessageRelatedEntityType.ASSIGNMENT, assignment.id!!,

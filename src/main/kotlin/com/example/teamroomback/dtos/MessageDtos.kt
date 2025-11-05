@@ -30,6 +30,12 @@ data class MessageReactionDto(
     val reactionTime: LocalDateTime? = null
 )
 
+data class MessageReactionPartialDto(
+    val username: String,
+    val emoji: String,
+    val reactionTime: LocalDateTime? = null
+)
+
 data class ReactionRequest(
     val messageId: Long,
     val emoji: String
@@ -76,5 +82,6 @@ data class ChatMessageDto(
     val editedAt: LocalDateTime?,
     val isDeleted: Boolean,
     val relatedEntities: List<ChatMessageRelatedEntityDto> = listOf(),
-    val media: List<ChatMessageMediaDto> = listOf()
+    val media: List<ChatMessageMediaDto> = listOf(),
+    val reactions: List<MessageReactionPartialDto> = listOf()
 )

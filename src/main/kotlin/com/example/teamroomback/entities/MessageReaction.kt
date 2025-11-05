@@ -1,5 +1,6 @@
 package com.example.teamroomback.entities
 
+import com.example.teamroomback.dtos.MessageReactionPartialDto
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import java.time.LocalDateTime
@@ -27,4 +28,12 @@ data class MessageReaction(
     @CreationTimestamp
     @Column(name = "reaction_time", nullable = false, updatable = false)
     val reactionTime: LocalDateTime? = null
-)
+) {
+    fun toMessageReactionPartialDto(): MessageReactionPartialDto {
+        return MessageReactionPartialDto(
+            username = user.username,
+            emoji = reactionEmoji,
+            reactionTime = reactionTime,
+        )
+    }
+}

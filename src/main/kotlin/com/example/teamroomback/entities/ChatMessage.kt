@@ -3,6 +3,7 @@ package com.example.teamroomback.entities
 import com.example.teamroomback.dtos.ChatMessageDto
 import com.example.teamroomback.dtos.ChatMessageMediaDto
 import com.example.teamroomback.dtos.ChatMessageRelatedEntityDto
+import com.example.teamroomback.dtos.MessageReactionPartialDto
 import jakarta.persistence.*
 import org.hibernate.annotations.CreationTimestamp
 import org.hibernate.annotations.JdbcTypeCode
@@ -70,7 +71,8 @@ data class ChatMessage(
             },
             media = media.map {
                 ChatMessageMediaDto(it.fileUrl, it.fileName, it.fileType, it.fileSizeBytes)
-            }
+            },
+            reactions = reactions.map { it.toMessageReactionPartialDto() }
         )
     }
 }

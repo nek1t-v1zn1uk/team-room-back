@@ -1,4 +1,4 @@
-FROM openjdk:17-jdk-slim AS build
+FROM eclipse-temurin:17-jdk-alpine AS build
 
 WORKDIR /app
 
@@ -16,7 +16,7 @@ RUN ./gradlew bootJar --no-daemon
 # Create the smaller runtime image
 # Use a smaller JRE-only base image for the final production image.
 # This significantly reduces the size of the deployed container.
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-alpine
 
 WORKDIR /app
 

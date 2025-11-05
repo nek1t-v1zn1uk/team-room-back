@@ -36,4 +36,10 @@ enum class WebSocketMessageType {
     READ_LAST_MESSAGE,
 
     SYSTEM_MESSAGE,
+
+    JOINED_TO_CHAT,
+    REMOVED_FROM_CHAT,
+    ROLE_CHANGED_IN_CHAT,
+    CHAT_UPDATED,
+    CHAT_DELETED,
 }

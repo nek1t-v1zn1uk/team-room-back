@@ -1,10 +1,10 @@
 package com.example.teamroomback.services
 
-import com.example.teamroomback.dtos.ChatMessageDto
 import com.example.teamroomback.dtos.WebSocketBroadcast
 import com.example.teamroomback.dtos.WebSocketMessageType
 import com.example.teamroomback.entities.Assignment
 import com.example.teamroomback.entities.AssignmentResponse
+import com.example.teamroomback.entities.ChatMember
 import com.example.teamroomback.entities.ChatMessage
 import com.example.teamroomback.entities.ChatMessageRelatedEntity
 import com.example.teamroomback.entities.ChatMessageRelatedEntityType
@@ -14,7 +14,6 @@ import com.example.teamroomback.entities.Material
 import com.example.teamroomback.repositories.ChatMessageRepository
 import com.example.teamroomback.repositories.ChatRepository
 import com.fasterxml.jackson.databind.ObjectMapper
-import jakarta.persistence.EntityNotFoundException
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -243,6 +242,76 @@ class WebSocketNotificationService(
             )
         )
         sendAsUserNotification(username, message)
+    }
+
+
+    fun notifyUserAboutJoiningToChat(newMember: ChatMember) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.JOINED_TO_CHAT,
+            payload = mapOf(
+                "chat_id" to newMember.chat.id,
+                "chat_name" to newMember.chat.name,
+                "chat_type" to newMember.chat.type,
+                "chat_photoUrl" to newMember.chat.photoUrl,
+                "role" to newMember.role,
+                "joined_at" to newMember.joinedAt
+            )
+        )
+        sendAsUserNotification(newMember.user.username,message)
+    }
+
+    fun notifyUserAboutRemovalFromChat(member: ChatMember) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.REMOVED_FROM_CHAT,
+            payload = mapOf(
+                "chat_id" to member.chat.id,
+                "chat_name" to member.chat.name,
+                "chat_type" to member.chat.type,
+                "chat_photoUrl" to member.chat.photoUrl,
+            )
+        )
+        sendAsUserNotification(member.user.username, message)
+    }
+
+    fun notifyUserAboutRoleChangeInChat(member: ChatMember, oldRole: String) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.ROLE_CHANGED_IN_CHAT,
+            payload = mapOf(
+                "chat_id" to member.chat.id,
+                "chat_name" to member.chat.name,
+                "chat_type" to member.chat.type,
+                "chat_photoUrl" to member.chat.photoUrl,
+                "old_role" to oldRole,
+                "new_role" to member.role,
+            )
+        )
+        sendAsUserNotification(member.user.username, message)
+    }
+
+    fun notifyUserAboutChatUpdate(member: ChatMember) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.CHAT_UPDATED,
+            payload = mapOf(
+                "chat_id" to member.chat.id,
+                "chat_name" to member.chat.name,
+                "chat_type" to member.chat.type,
+                "chat_photoUrl" to member.chat.photoUrl,
+            )
+        )
+        sendAsUserNotification(member.user.username, message)
+    }
+
+    fun notifyUserAboutChatDeletion(member: ChatMember) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.CHAT_DELETED,
+            payload = mapOf(
+                "chat_id" to member.chat.id,
+                "chat_name" to member.chat.name,
+                "chat_type" to member.chat.type,
+                "chat_photoUrl" to member.chat.photoUrl,
+            )
+        )
+        sendAsUserNotification(member.user.username, message)
     }
 
 

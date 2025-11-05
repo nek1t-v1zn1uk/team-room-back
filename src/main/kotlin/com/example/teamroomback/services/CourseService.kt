@@ -196,6 +196,11 @@ class CourseService(
             chatMemberRepository.save(member)
         }
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.USER_JOINED_TO_CHAT,
+            content = mapOf(
+                "username" to user.username,
+            )
+        )
 
         webSocketNotificationService.notifyUserAboutJoiningToCourse(courseMember)
         for(member in courseMember.course.courseMembers) {
@@ -269,6 +274,11 @@ class CourseService(
             chatMemberRepository.delete(member)
         }
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.USER_LEFT_FROM_CHAT,
+            content = mapOf(
+                "username" to member.user.username,
+            )
+        )
 
         webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
         for(m in member.course.courseMembers) {
@@ -289,6 +299,11 @@ class CourseService(
             chatMemberRepository.delete(member)
         }
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.USER_LEFT_FROM_CHAT,
+            content = mapOf(
+                "username" to member.user.username,
+            )
+        )
 
         webSocketNotificationService.notifyUserAboutRemovalFromCourse(member)
         for(m in member.course.courseMembers) {

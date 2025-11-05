@@ -19,7 +19,8 @@ class ChatService(
     private val chatMemberRepository: ChatMemberRepository,
     private val chatMessageRepository: ChatMessageRepository,
     private val userRepository: UserRepository,
-    private val pinnedMessageRepository: PinnedMessageRepository
+    private val pinnedMessageRepository: PinnedMessageRepository,
+    private val webSocketNotificationService: WebSocketNotificationService
 ) {
 
     @Transactional(readOnly = true)
@@ -220,13 +221,21 @@ class ChatService(
             throw AccessDeniedException("Cannot assign OWNER role directly.")
         }
 
-        val newMember = ChatMember(
-            chat = chat,
-            user = user,
-            role = request.role
+        val newMember = chatMemberRepository.save(
+            ChatMember(
+                chat = chat,
+                user = user,
+                role = request.role
+            )
         )
 
-        return chatMemberRepository.save(newMember)
+        webSocketNotificationService.saveAndSendSystemMessage(chat.id!!, ChatMessageType.USER_JOINED_TO_CHAT,
+            content = mapOf(
+                "username" to user.username,
+            )
+        )
+
+        return newMember
     }
 
     @Transactional
@@ -272,6 +281,12 @@ class ChatService(
         }
 
         chatMemberRepository.delete(targetMember)
+
+        webSocketNotificationService.saveAndSendSystemMessage(chatId, ChatMessageType.USER_LEFT_FROM_CHAT,
+            content = mapOf(
+                "username" to targetMember.user.username,
+            )
+        )
     }
 
     @Transactional
@@ -284,6 +299,12 @@ class ChatService(
         }
 
         chatMemberRepository.delete(member)
+
+        webSocketNotificationService.saveAndSendSystemMessage(chatId, ChatMessageType.USER_LEFT_FROM_CHAT,
+            content = mapOf(
+                "username" to member.user.username,
+            )
+        )
     }
 
     @Transactional

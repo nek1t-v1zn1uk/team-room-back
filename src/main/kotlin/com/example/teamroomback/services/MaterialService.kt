@@ -6,6 +6,8 @@ import com.example.teamroomback.dtos.CreateMaterialRequest
 import com.example.teamroomback.dtos.PatchMaterialRequest
 import com.example.teamroomback.dtos.PutMaterialRequest
 import com.example.teamroomback.dtos.RenameMediaRequest
+import com.example.teamroomback.entities.ChatMessageRelatedEntityType
+import com.example.teamroomback.entities.ChatMessageType
 import com.example.teamroomback.entities.Material
 import com.example.teamroomback.entities.MaterialMedia
 import com.example.teamroomback.entities.MaterialTag
@@ -15,6 +17,7 @@ import com.example.teamroomback.repositories.MaterialRepository
 import com.example.teamroomback.repositories.MaterialTagRepository
 import com.example.teamroomback.repositories.UserRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import javax.management.InstanceNotFoundException
 import javax.print.attribute.standard.Media
 
@@ -27,6 +30,8 @@ class MaterialService(
     private val tagRepository: MaterialTagRepository,
     private val webSocketNotificationService: WebSocketNotificationService
 ) {
+
+    @Transactional
     fun createMaterial(username: String, courseId: Long, request: CreateMaterialRequest): Material {
         val course = courseRepository.findCourseById(courseId)
             ?: throw InstanceNotFoundException("Course with id \"${courseId}\" not found")
@@ -60,6 +65,11 @@ class MaterialService(
 
         material = materialRepository.findMaterialById(material.id!!)!!
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.MATERIAL_CREATED,
+            ChatMessageRelatedEntityType.MATERIAL, material.id!!,
+            mapOf("materialTopic" to material.topic)
+        )
+
         for(member in course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialCreation(member, material)
         }
@@ -67,17 +77,20 @@ class MaterialService(
         return material
     }
 
+    @Transactional(readOnly = true)
     fun getMaterial(materialId: Long): Material {
         val material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
         return material
     }
 
+    @Transactional(readOnly = true)
     fun getCourseMaterials(courseId: Long): List<Material> {
         val materials = materialRepository.findMaterialsByCourseId(courseId)
         return materials
     }
 
+    @Transactional
     fun putMaterial(username: String, courseId: Long, materialId: Long, request: PutMaterialRequest): Material {
         var material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
@@ -109,6 +122,11 @@ class MaterialService(
 
         material = materialRepository.findMaterialById(material.id!!)!!
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.MATERIAL_UPDATED,
+            ChatMessageRelatedEntityType.MATERIAL, material.id!!,
+            mapOf("materialTopic" to material.topic)
+        )
+
         for(member in material.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialUpdate(member, material)
         }
@@ -116,6 +134,7 @@ class MaterialService(
         return material
     }
 
+    @Transactional
     fun patchMaterial(username: String, courseId: Long, materialId: Long, request: PatchMaterialRequest): Material {
         var material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
@@ -153,6 +172,11 @@ class MaterialService(
 
         material = materialRepository.findMaterialById(material.id!!)!!
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.MATERIAL_UPDATED,
+            ChatMessageRelatedEntityType.MATERIAL, material.id!!,
+            mapOf("materialTopic" to material.topic)
+        )
+
         for(member in material.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialUpdate(member, material)
         }
@@ -160,10 +184,16 @@ class MaterialService(
         return material
     }
 
+    @Transactional
     fun deleteMaterial(materialId: Long): Material {
         val material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
         materialRepository.delete(material)
+
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(material.course.id!!, ChatMessageType.MATERIAL_DELETED,
+            ChatMessageRelatedEntityType.MATERIAL, material.id!!,
+            mapOf("materialTopic" to material.topic)
+        )
 
         for(member in material.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialDeletion(member, material)
@@ -173,6 +203,7 @@ class MaterialService(
     }
 
 
+    @Transactional
     fun addMedia(materialId: Long, request: AddMediaRequest): MaterialMedia {
         val material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
@@ -182,6 +213,11 @@ class MaterialService(
             material = material
         ))
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(material.course.id!!, ChatMessageType.MATERIAL_UPDATED,
+            ChatMessageRelatedEntityType.MATERIAL, material.id!!,
+            mapOf("materialTopic" to material.topic)
+        )
+
         for(member in material.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialUpdate(member, material)
         }
@@ -189,6 +225,7 @@ class MaterialService(
         return media
     }
 
+    @Transactional
     fun renameMedia(mediaId: Long, request: RenameMediaRequest): MaterialMedia {
         var media = mediaRepository.findMaterialMediaById(mediaId)
             ?: throw InstanceNotFoundException("Media with id \"${mediaId}\" not found")
@@ -197,6 +234,11 @@ class MaterialService(
 
         media = mediaRepository.save(media)
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(media.material.course.id!!, ChatMessageType.MATERIAL_UPDATED,
+            ChatMessageRelatedEntityType.MATERIAL, media.material.id!!,
+            mapOf("materialTopic" to media.material.topic)
+        )
+
         for(member in media.material.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialUpdate(member, media.material)
         }
@@ -204,12 +246,18 @@ class MaterialService(
         return media
     }
 
+    @Transactional
     fun deleteMedia(mediaId: Long): MaterialMedia {
         val media = mediaRepository.findMaterialMediaById(mediaId)
             ?: throw InstanceNotFoundException("Media with id \"${mediaId}\" not found")
 
         mediaRepository.delete(media)
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(media.material.course.id!!, ChatMessageType.MATERIAL_UPDATED,
+            ChatMessageRelatedEntityType.MATERIAL, media.material.id!!,
+            mapOf("materialTopic" to media.material.topic)
+        )
+
         for(member in media.material.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialUpdate(member, media.material)
         }
@@ -218,6 +266,7 @@ class MaterialService(
     }
 
 
+    @Transactional
     fun addTag(materialId: Long, request: AddTagRequest): MaterialTag {
         val material = materialRepository.findMaterialById(materialId)
             ?: throw InstanceNotFoundException("Material with id \"${materialId}\" not found")
@@ -230,6 +279,11 @@ class MaterialService(
             material = material
         ))
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(material.course.id!!, ChatMessageType.MATERIAL_UPDATED,
+            ChatMessageRelatedEntityType.MATERIAL, material.id!!,
+            mapOf("materialTopic" to material.topic)
+        )
+
         for(member in material.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialUpdate(member, material)
         }
@@ -237,11 +291,17 @@ class MaterialService(
         return tag
     }
 
+    @Transactional
     fun deleteTag(tagName: String, materialId: Long): MaterialTag {
         val tag = tagRepository.findMaterialTagByNameAndMaterialId(tagName, materialId)
             ?: throw InstanceNotFoundException("Tag with name \"${tagName}\" not found")
 
         tagRepository.delete(tag)
+
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(tag.material.course.id!!, ChatMessageType.MATERIAL_UPDATED,
+            ChatMessageRelatedEntityType.MATERIAL, tag.material.id!!,
+            mapOf("materialTopic" to tag.material.topic)
+        )
 
         for(member in tag.material.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutMaterialUpdate(member, tag.material)

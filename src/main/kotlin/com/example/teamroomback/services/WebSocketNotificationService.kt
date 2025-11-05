@@ -5,14 +5,26 @@ import com.example.teamroomback.dtos.WebSocketBroadcast
 import com.example.teamroomback.dtos.WebSocketMessageType
 import com.example.teamroomback.entities.Assignment
 import com.example.teamroomback.entities.AssignmentResponse
+import com.example.teamroomback.entities.ChatMessage
+import com.example.teamroomback.entities.ChatMessageRelatedEntity
+import com.example.teamroomback.entities.ChatMessageRelatedEntityType
+import com.example.teamroomback.entities.ChatMessageType
 import com.example.teamroomback.entities.CourseMember
 import com.example.teamroomback.entities.Material
+import com.example.teamroomback.repositories.ChatMessageRepository
+import com.example.teamroomback.repositories.ChatRepository
+import com.fasterxml.jackson.databind.ObjectMapper
+import jakarta.persistence.EntityNotFoundException
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class WebSocketNotificationService(
     private val simpMessagingTemplate: SimpMessagingTemplate,
+    private val chatRepository: ChatRepository,
+    private val chatMessageRepository: ChatMessageRepository,
+    private val objectMapper: ObjectMapper,
 ) {
 
     private fun sendAsUserNotification(username: String, payload: WebSocketBroadcast) {
@@ -239,6 +251,35 @@ class WebSocketNotificationService(
             type = type,
             payload = message
         ))
+    }
+
+    @Transactional
+    fun saveAndSendSystemMessageInMainCourseChat(courseId: Long, type: ChatMessageType, relatedEntityType: ChatMessageRelatedEntityType? = null, relatedEntityId: Long? = null, content: Map<String, Any>? = null) {
+        val chat = chatRepository.findMainChatByCourseId(courseId)
+        saveAndSendSystemMessage(chat.id!!, type, relatedEntityType, relatedEntityId, content)
+    }
+
+    @Transactional
+    fun saveAndSendSystemMessage(chatId: Long, type: ChatMessageType, relatedEntityType: ChatMessageRelatedEntityType? = null, relatedEntityId: Long? = null, content: Map<String, Any>? = null) {
+        var message = chatMessageRepository.save(
+            ChatMessage(
+                chat = chatRepository.findById(chatId).get(),
+                content = content?.let{ objectMapper.writeValueAsString(it) },
+                user = null,
+                type = type
+            )
+        )
+        if (relatedEntityId != null && relatedEntityType != null) {
+            message.relatedEntities = mutableListOf(
+                ChatMessageRelatedEntity(
+                    message = message,
+                    relatedEntityId = relatedEntityId,
+                    relatedEntityType = relatedEntityType
+                )
+            )
+            message = chatMessageRepository.save(message)
+        }
+        sendChatMessage(chatId, WebSocketMessageType.SYSTEM_MESSAGE, message.toChatMessageDto())
     }
 
 }

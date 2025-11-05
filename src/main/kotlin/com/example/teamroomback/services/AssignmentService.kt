@@ -5,6 +5,8 @@ import com.example.teamroomback.entities.Assignment
 import com.example.teamroomback.entities.AssignmentMedia
 import com.example.teamroomback.entities.AssignmentResponse
 import com.example.teamroomback.entities.AssignmentResponseMedia
+import com.example.teamroomback.entities.ChatMessageRelatedEntityType
+import com.example.teamroomback.entities.ChatMessageType
 import com.example.teamroomback.entities.CourseMemberRole
 import com.example.teamroomback.repositories.*
 import org.apache.coyote.BadRequestException
@@ -24,6 +26,13 @@ class AssignmentService(
     private val webSocketNotificationService: WebSocketNotificationService
 ) {
 
+    private fun postSystemMessageAboutAssignmentUpdate(assignment: Assignment) {
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(assignment.course.id!!, ChatMessageType.ASSIGNMENT_UPDATED,
+            ChatMessageRelatedEntityType.ASSIGNMENT, assignment.id!!,
+            mapOf("assignmentTitle" to assignment.title)
+        )
+    }
+
     @Transactional
     fun createAssignment(authorUsername: String, courseId: Long, request: CreateAssignmentRequest): Assignment {
         val author = userRepository.findByUsernameValue(authorUsername)
@@ -40,6 +49,11 @@ class AssignmentService(
             deadline = request.deadline
         ))
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(courseId, ChatMessageType.ASSIGNMENT_CREATED,
+            ChatMessageRelatedEntityType.ASSIGNMENT, assignment.id!!,
+            mapOf("assignmentTitle" to assignment.title)
+        )
+
         for(member in course.courseMembers) {
             webSocketNotificationService.notifyUserAboutAssignmentCreation(member.user.username, assignment)
         }
@@ -47,6 +61,7 @@ class AssignmentService(
         return assignment
     }
 
+    @Transactional(readOnly = true)
     fun getCourseAssignments(courseId: Long): List<Assignment> {
         if (!courseRepository.existsById(courseId)) {
             throw InstanceNotFoundException("Course with id $courseId not found")
@@ -54,6 +69,7 @@ class AssignmentService(
         return assignmentRepository.findByCourseId(courseId)
     }
 
+    @Transactional(readOnly = true)
     fun getAssignment(assignmentId: Long): Assignment {
         return assignmentRepository.findById(assignmentId)
             .orElseThrow { InstanceNotFoundException("Assignment with id $assignmentId not found") }
@@ -69,6 +85,8 @@ class AssignmentService(
         assignment.deadline = request.deadline
 
         val newAssignment = assignmentRepository.save(assignment)
+
+        postSystemMessageAboutAssignmentUpdate(newAssignment)
 
         for(member in newAssignment.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newAssignment)
@@ -88,6 +106,8 @@ class AssignmentService(
 
         val newAssignment = assignmentRepository.save(assignment)
 
+        postSystemMessageAboutAssignmentUpdate(newAssignment)
+
         for(member in newAssignment.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newAssignment)
         }
@@ -99,6 +119,11 @@ class AssignmentService(
     fun deleteAssignment(assignmentId: Long): Assignment {
         val assignment = getAssignment(assignmentId)
         assignmentRepository.delete(assignment)
+
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(assignment.course.id!!, ChatMessageType.ASSIGNMENT_DELETED,
+            ChatMessageRelatedEntityType.ASSIGNMENT, assignment.id!!,
+            mapOf("assignmentTitle" to assignment.title)
+        )
 
         for(member in assignment.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutAssignmentDeletion(member.user.username, assignment)
@@ -117,6 +142,8 @@ class AssignmentService(
         )
 
         val newMedia = assignmentMediaRepository.save(media)
+
+        postSystemMessageAboutAssignmentUpdate(assignment)
 
         for(member in assignment.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, assignment)
@@ -137,6 +164,8 @@ class AssignmentService(
 
         val newMedia = assignmentMediaRepository.save(media)
 
+        postSystemMessageAboutAssignmentUpdate(media.assignment)
+
         for(member in newMedia.assignment.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, newMedia.assignment)
         }
@@ -148,6 +177,8 @@ class AssignmentService(
     fun deleteMedia(mediaId: Long): AssignmentMedia {
         val media = getMedia(mediaId)
         assignmentMediaRepository.delete(media)
+
+        postSystemMessageAboutAssignmentUpdate(media.assignment)
 
         for(member in media.assignment.course.courseMembers) {
             webSocketNotificationService.notifyUserAboutAssignmentUpdate(member.user.username, media.assignment)
@@ -191,16 +222,19 @@ class AssignmentService(
         return savedResponse
     }
 
+    @Transactional(readOnly = true)
     fun getAssignmentResponses(assignmentId: Long): List<AssignmentResponse> {
         val assignment = getAssignment(assignmentId)
         return assignment.responses
     }
 
+    @Transactional(readOnly = true)
     fun getAssignmentResponse(responseId: Long): AssignmentResponse {
         return assignmentResponseRepository.findById(responseId)
             .orElseThrow { InstanceNotFoundException("Assignment response with id $responseId not found") }
     }
 
+    @Transactional(readOnly = true)
     fun getMyAssignmentResponse(assignmentId: Long, username: String): AssignmentResponse {
         val user = userRepository.findByUsernameValue(username)
             ?: throw InstanceNotFoundException("User with username $username not found")
@@ -208,6 +242,7 @@ class AssignmentService(
             ?: throw InstanceNotFoundException("Assignment response for assignment $assignmentId by user $username not found")
     }
 
+    @Transactional(readOnly = true)
     fun getAllMyResponses(courseId: Long, username: String): List<AssignmentResponse> {
         val user = userRepository.findByUsernameValue(username)
             ?: throw InstanceNotFoundException("User with username $username not found")

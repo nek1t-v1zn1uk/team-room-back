@@ -94,7 +94,6 @@ data class TransferOwnershipRequest(
 )
 
 data class PinMessageRequest(
-    @field:NotBlank(message = "Message id cannot be blank")
     val messageId: Long,
 )
 

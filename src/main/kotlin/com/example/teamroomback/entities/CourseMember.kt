@@ -55,4 +55,12 @@ enum class CourseMemberRole {
             else -> false
         }
     }
+
+    fun toConferenceParticipantRole() = when(this) {
+        CourseMemberRole.OWNER -> ConferenceParticipantRole.MODERATOR
+        CourseMemberRole.PROFESSOR -> ConferenceParticipantRole.MODERATOR
+        CourseMemberRole.LEADER -> ConferenceParticipantRole.MEMBER
+        CourseMemberRole.STUDENT -> ConferenceParticipantRole.MEMBER
+        CourseMemberRole.VIEWER -> ConferenceParticipantRole.VIEWER
+    }
 }

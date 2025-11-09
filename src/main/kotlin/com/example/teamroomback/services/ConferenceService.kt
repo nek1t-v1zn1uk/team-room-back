@@ -99,5 +99,80 @@ class ConferenceService(
 
 
 
+    @Transactional
+    fun userJoinedConference(request: JitsiEventDTO) {
+        val user = userRepository.findByUsernameValue(request.userId!!)
+            ?: throw EntityNotFoundException("User with username ${request.userId} not found")
+        var conference = conferenceRepository.findByRoomName(request.roomName)
+        if(conference == null) {
+            val conf = waitingConferences.find { it.roomName == request.roomName }
+            if(conf == null)
+                throw EntityNotFoundException("Conference with roomName ${request.roomName} not found")
+
+            conference = conferenceRepository.save(conf)
+            waitingConferences.remove(conf)
+
+            //TODO  notificate all course members about started conference
+        }
+        val courseMember = courseMemberRepository.findByUserUsernameValueAndCourseId(request.userId, conference.course.id!!)
+            ?: throw EntityNotFoundException("Course member with username ${request.userId} in course with id ${conference.course.id} not found")
+
+        val existingParticipant = conferenceParticipantRepository.findByConferenceIdAndUserUsernameValue(conference.id!!, user.username)
+
+        val conferenceParticipant =
+            if(existingParticipant == null) conferenceParticipantRepository.save(ConferenceParticipant(
+                user = user,
+                conference = conference,
+                role = courseMember.role.toConferenceParticipantRole()
+            ))
+            else {
+                existingParticipant.leftAt = null
+                existingParticipant.role = courseMember.role.toConferenceParticipantRole()
+                conferenceParticipantRepository.save(existingParticipant)
+            }
+
+        //TODO notificate all course members about change of participant list in conference
+    }
+
+    @Transactional
+    fun userLeftConference(request: JitsiEventDTO) {
+        val user = userRepository.findByUsernameValue(request.userId!!)
+            ?: throw EntityNotFoundException("User with username ${request.userId} not found")
+        val conference = conferenceRepository.findByRoomName(request.roomName)
+            ?: throw EntityNotFoundException("Conference with roomName ${request.roomName} not found")
+        val courseMember = courseMemberRepository.findByUserUsernameValueAndCourseId(request.userId, conference.course.id!!)
+            ?: throw EntityNotFoundException("Course member with username ${request.userId} in course with id ${conference.course.id} not found")
+
+        var existingParticipant = conferenceParticipantRepository.findByConferenceIdAndUserUsernameValue(conference.id!!, user.username)
+            ?: throw EntityNotFoundException("Conference participant with username ${user.username} in conference with id ${conference.id} not found")
+
+
+        existingParticipant.leftAt = LocalDateTime.now()
+
+        existingParticipant = conferenceParticipantRepository.save(existingParticipant)
+
+
+        //TODO notificate all course members about change of participant list in conference
+    }
+
+    @Transactional
+    fun conferenceEnded(request: JitsiEventDTO) {
+        val conference = conferenceRepository.findByRoomName(request.roomName)
+            ?: throw EntityNotFoundException("Conference with roomName ${request.roomName} not found")
+
+        conferenceParticipantRepository.saveAll(conference.participants.map {
+            it.leftAt = LocalDateTime.now()
+            it
+        })
+
+        conference.status = ConferenceStatus.ENDED
+        conference.endedAt = LocalDateTime.now()
+
+        conferenceRepository.save(conference)
+
+
+
+        //TODO notificate all course members about end of conference
+    }
 
 }

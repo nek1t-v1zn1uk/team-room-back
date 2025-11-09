@@ -35,7 +35,7 @@ class SecurityConfig {
             .csrf { it.disable() }
             .cors { it.configurationSource(corsConfigurationSource()) } // Add this line
             .authorizeHttpRequests { auth ->
-                auth.requestMatchers("/swagger-ui.html","/swagger-ui/**", "/v3/api-docs/**", "/api/auth/**", "/api/no-auth", "/ws/**").permitAll()
+                auth.requestMatchers("/swagger-ui.html","/swagger-ui/**", "/v3/api-docs/**", "/api/auth/**", "/api/no-auth", "/ws/**", "/jitsi/**").permitAll()
                 auth.anyRequest().authenticated()
             }
             .sessionManagement { session ->

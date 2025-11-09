@@ -45,6 +45,9 @@ data class User(
     @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
     val messageReactions: List<MessageReaction> = listOf(),
 
+    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    val participants: MutableList<ConferenceParticipant> = mutableListOf()
+
 ) : UserDetails {
 
     override fun getAuthorities(): Collection<GrantedAuthority> {

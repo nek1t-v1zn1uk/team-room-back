@@ -34,7 +34,6 @@ data class Profile(
     @JoinColumn(name = "user_id")
     val user: User,
 ) {
-    /*override fun toString(): String {
-        return "Profile(id=$id, firstName='$firstName', lastName='$lastName', biography='$biography', photoUrl=$photoUrl)"
-    }*/
+    val fullName: String
+        get() = "$firstName $lastName"
 }

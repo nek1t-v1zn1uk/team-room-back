@@ -36,5 +36,8 @@ data class Course(
     val assignments: List<Assignment> = listOf(),
 
     @OneToMany(mappedBy = "course", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
-    val chats: List<Chat> = listOf()
+    val chats: List<Chat> = listOf(),
+
+    @OneToMany(mappedBy = "course", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    val conferences: List<Conference> = listOf(),
 )

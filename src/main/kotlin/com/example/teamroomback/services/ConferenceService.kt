@@ -5,6 +5,8 @@ import com.example.teamroomback.dtos.ConferenceJoinDetails
 import com.example.teamroomback.dtos.CreateConferenceRequest
 import com.example.teamroomback.dtos.JitsiEventDTO
 import com.example.teamroomback.dtos.ShortConferenceDTO
+import com.example.teamroomback.entities.ChatMessageRelatedEntityType
+import com.example.teamroomback.entities.ChatMessageType
 import com.example.teamroomback.entities.Conference
 import com.example.teamroomback.entities.ConferenceParticipant
 import com.example.teamroomback.entities.ConferenceParticipantRole
@@ -31,6 +33,7 @@ class ConferenceService(
     private val conferenceRepository: ConferenceRepository,
     private val conferenceParticipantRepository: ConferenceParticipantRepository,
     private val courseMemberRepository: CourseMemberRepository,
+    private val webSocketNotificationService: WebSocketNotificationService,
 ) {
     val waitingConferences = mutableListOf<Conference>()
 
@@ -79,6 +82,13 @@ class ConferenceService(
         val conference = conferenceRepository.findById(conferenceId)
             .orElseThrow{ EntityNotFoundException("Conference with id $conferenceId not found") }
 
+        if(conference.status == ConferenceStatus.ENDED)
+            throw IllegalArgumentException("Conference with id $conferenceId is already ended")
+
+        val conferenceParticipant = conferenceParticipantRepository.findByConferenceIdAndUserUsernameValue(conference.id!!, username)
+        if(conferenceParticipant != null && conferenceParticipant.leftAt == null)
+            throw IllegalArgumentException("User $username is already participates in conference with id ${conferenceParticipant.id}")
+
         return createConferenceJoinDetails(user, courseMember, conference.roomName)
     }
 
@@ -91,10 +101,10 @@ class ConferenceService(
     }
 
     @Transactional(readOnly = true)
-    fun getCourseConferencesDTOs(courseId: Long): List<ConferenceDTO> {
+    fun getCourseConferencesDTOs(courseId: Long): List<ShortConferenceDTO> {
         val conferences = conferenceRepository.findAllByCourseId(courseId)
 
-        return conferences.map { it.toConferenceDTO() }
+        return conferences.map { it.toShortConferenceDTO() }
     }
 
 
@@ -106,13 +116,28 @@ class ConferenceService(
         var conference = conferenceRepository.findByRoomName(request.roomName)
         if(conference == null) {
             val conf = waitingConferences.find { it.roomName == request.roomName }
-            if(conf == null)
-                throw EntityNotFoundException("Conference with roomName ${request.roomName} not found")
+                ?: throw EntityNotFoundException("Conference with roomName ${request.roomName} not found")
 
-            conference = conferenceRepository.save(conf)
             waitingConferences.remove(conf)
 
-            //TODO  notificate all course members about started conference
+            val course = courseRepository.findById(conf.course.id!!).get()
+            val newConference = Conference(
+                course = course,
+                subject = conf.subject,
+                status = conf.status,
+                roomName = conf.roomName
+            )
+            conference = conferenceRepository.save(newConference)
+
+            webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(conference.course.id!!, ChatMessageType.CONFERENCE_STARTED,
+                ChatMessageRelatedEntityType.CONFERENCE, conference.id!!,
+                mapOf("conferenceSubject" to conference.subject.toString())
+            )
+
+
+            for(member in conference.course.courseMembers) {
+                webSocketNotificationService.notifyUserAboutConferenceStart(member.user.username, conference)
+            }
         }
         val courseMember = courseMemberRepository.findByUserUsernameValueAndCourseId(request.userId, conference.course.id!!)
             ?: throw EntityNotFoundException("Course member with username ${request.userId} in course with id ${conference.course.id} not found")
@@ -131,14 +156,17 @@ class ConferenceService(
                 conferenceParticipantRepository.save(existingParticipant)
             }
 
-        //TODO notificate all course members about change of participant list in conference
+        conference.participants.add(conferenceParticipant)
+        for(member in conference.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutConferenceParticipantListUpdate(member.user.username, conference)
+        }
     }
 
     @Transactional
     fun userLeftConference(request: JitsiEventDTO) {
         val user = userRepository.findByUsernameValue(request.userId!!)
             ?: throw EntityNotFoundException("User with username ${request.userId} not found")
-        val conference = conferenceRepository.findByRoomName(request.roomName)
+        var conference = conferenceRepository.findByRoomName(request.roomName)
             ?: throw EntityNotFoundException("Conference with roomName ${request.roomName} not found")
         val courseMember = courseMemberRepository.findByUserUsernameValueAndCourseId(request.userId, conference.course.id!!)
             ?: throw EntityNotFoundException("Course member with username ${request.userId} in course with id ${conference.course.id} not found")
@@ -151,8 +179,10 @@ class ConferenceService(
 
         existingParticipant = conferenceParticipantRepository.save(existingParticipant)
 
-
-        //TODO notificate all course members about change of participant list in conference
+        conference = conferenceRepository.findByRoomName(request.roomName)!!
+        for(member in conference.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutConferenceParticipantListUpdate(member.user.username, conference)
+        }
     }
 
     @Transactional
@@ -171,8 +201,14 @@ class ConferenceService(
         conferenceRepository.save(conference)
 
 
+        webSocketNotificationService.saveAndSendSystemMessageInMainCourseChat(conference.course.id!!, ChatMessageType.CONFERENCE_ENDED,
+            ChatMessageRelatedEntityType.CONFERENCE, conference.id!!,
+            mapOf("conferenceSubject" to conference.subject.toString())
+        )
 
-        //TODO notificate all course members about end of conference
+        for(member in conference.course.courseMembers) {
+            webSocketNotificationService.notifyUserAboutConferenceEnd(member.user.username, conference)
+        }
     }
 
 }

@@ -9,6 +9,7 @@ import com.example.teamroomback.entities.ChatMessage
 import com.example.teamroomback.entities.ChatMessageRelatedEntity
 import com.example.teamroomback.entities.ChatMessageRelatedEntityType
 import com.example.teamroomback.entities.ChatMessageType
+import com.example.teamroomback.entities.Conference
 import com.example.teamroomback.entities.CourseMember
 import com.example.teamroomback.entities.Material
 import com.example.teamroomback.repositories.ChatMessageRepository
@@ -312,6 +313,49 @@ class WebSocketNotificationService(
             )
         )
         sendAsUserNotification(member.user.username, message)
+    }
+
+    fun notifyUserAboutConferenceStart(username: String, conference: Conference) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.CONFERENCE_STARTED,
+            payload = mapOf(
+                "conference_id" to conference.id,
+                "conference_subject" to conference.subject,
+                "course_id" to conference.course.id,
+                "course_name" to conference.course.name,
+                "course_photoUrl" to conference.course.photoUrl,
+            )
+        )
+        sendAsUserNotification(username, message)
+    }
+
+    fun notifyUserAboutConferenceEnd(username: String, conference: Conference) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.CONFERENCE_ENDED,
+            payload = mapOf(
+                "conference_id" to conference.id,
+                "conference_subject" to conference.subject,
+                "course_id" to conference.course.id,
+                "course_name" to conference.course.name,
+                "course_photoUrl" to conference.course.photoUrl,
+            )
+        )
+        sendAsUserNotification(username, message)
+    }
+
+    fun notifyUserAboutConferenceParticipantListUpdate(username: String, conference: Conference) {
+        val message = WebSocketBroadcast(
+            type = WebSocketMessageType.CONFERENCE_PARTICIPANT_LIST_UPDATE,
+            payload = mapOf(
+                "conference_id" to conference.id,
+                "conference_subject" to conference.subject,
+                "new_participant_count" to conference.participants.filter { it.leftAt == null }.size,
+                "course_id" to conference.course.id,
+                "course_name" to conference.course.name,
+                "course_photoUrl" to conference.course.photoUrl,
+            )
+        )
+        sendAsUserNotification(username, message)
     }
 
 

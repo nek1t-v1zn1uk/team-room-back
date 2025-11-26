@@ -14,6 +14,6 @@ class WebConfig(
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(profileCheckInterceptor)
             .addPathPatterns("/api/**")
-            .excludePathPatterns("/api/auth/**", "/api/no-auth", "/api/with-auth", "/jitsi/**")
+            .excludePathPatterns("/api/auth/**", "/api/no-auth", "/api/with-auth", "/api/jitsi/**")
     }
 }

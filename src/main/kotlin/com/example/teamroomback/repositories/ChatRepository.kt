@@ -4,7 +4,9 @@ import com.example.teamroomback.entities.Chat
 import com.example.teamroomback.entities.ChatMessage
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.stereotype.Repository
 
+@Repository
 interface ChatRepository : JpaRepository<Chat, Long> {
     @Query("SELECT c FROM Chat c JOIN c.members m WHERE m.user.usernameValue = :username")
     fun findChatsByUsername(username: String): List<Chat>

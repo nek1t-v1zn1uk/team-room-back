@@ -54,24 +54,6 @@ class PCloudService {
         val pubLinkMap: Map<String, Any> = mapper.readValue(pubLinkResponse.body!!.string(), typeRef)
         val link = pubLinkMap["link"] as String
 
-        /*val requestDownloadLink = Request.Builder()
-            .url("$hostname/getpublinkdownload?code=$code")
-            .build()
-
-        val downloadLinkResponse = client.newCall(requestDownloadLink).execute()
-
-        if (!downloadLinkResponse.isSuccessful) {
-            throw IOException("Unexpected code $downloadLinkResponse")
-        }
-
-        val downloadLinkMap: Map<String, Any> = mapper.readValue(downloadLinkResponse.body!!.string(), typeRef)
-        val hosts = downloadLinkMap["hosts"] as List<*>
-        val host = hosts[0] as String
-        val path = downloadLinkMap["path"] as String
-
-        return "https://${host}$path"
-        */
-
         return link
     }
 

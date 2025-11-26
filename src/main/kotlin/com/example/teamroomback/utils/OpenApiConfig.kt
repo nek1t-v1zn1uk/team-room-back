@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.info.Info
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.security.SecurityScheme
 import io.swagger.v3.oas.annotations.tags.Tag
+import io.swagger.v3.oas.models.servers.Server
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springdoc.core.customizers.OpenApiCustomizer
@@ -37,6 +38,10 @@ import org.springdoc.core.customizers.OpenApiCustomizer
         Tag(name = "Чати, учасники - керування учасниками чату"),
         Tag(name = "Чати, приватні"),
         Tag(name = "Чати, курси - керування чатами курсів"),
+
+        Tag(name = "Конференції"),
+
+        Tag(name = "Jitsi Webhooks")
     ]
 )
 @SecurityScheme(
@@ -72,6 +77,8 @@ class SwaggerTagOrderConfig {
             "Чати, учасники - керування учасниками чату",
             "Чати, приватні",
             "Чати, курси - керування чатами курсів",
+            "Конференції",
+            "Jitsi Webhooks"
         )
 
         return OpenApiCustomizer { openApi ->
@@ -79,6 +86,18 @@ class SwaggerTagOrderConfig {
             openApi.tags = currentTags.sortedBy { tag ->
                 tagOrder.indexOf(tag.name).takeIf { it >= 0 } ?: Int.MAX_VALUE
             }
+        }
+    }
+
+    @Bean
+    fun addHttpsServer(): OpenApiCustomizer {
+        return OpenApiCustomizer { openApi ->
+            val servers = openApi.servers ?: mutableListOf()
+
+            servers.add(0, Server().url("https://team-room-jitsi.duckdns.org"))
+            servers.add(1, Server().url("http://localhost:8081"))
+
+            openApi.servers = servers
         }
     }
 }

@@ -35,7 +35,7 @@ class SecurityConfig {
             .csrf { it.disable() }
             .cors { it.configurationSource(corsConfigurationSource()) } // Add this line
             .authorizeHttpRequests { auth ->
-                auth.requestMatchers("/swagger-ui.html","/swagger-ui/**", "/v3/api-docs/**", "/api/auth/**", "/api/no-auth", "/ws/**", "/jitsi/**").permitAll()
+                auth.requestMatchers("/swagger-ui.html","/swagger-ui/**", "/v3/api-docs/**", "/api/auth/**", "/api/no-auth", "/ws/**", "/api/jitsi/**").permitAll()
                 auth.anyRequest().authenticated()
             }
             .sessionManagement { session ->
@@ -49,7 +49,7 @@ class SecurityConfig {
     @Bean
     fun corsConfigurationSource(): CorsConfigurationSource {
         val configuration = CorsConfiguration()
-        configuration.allowedOrigins = listOf("https://teamroom.onrender.com", "null")
+        configuration.allowedOrigins = listOf("https://teamroom.onrender.com", "https://team-room-jitsi.duckdns.org", "http://localhost:5173", "null")
         configuration.allowedMethods = listOf("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
         configuration.allowedHeaders = listOf("*")
         configuration.allowCredentials = true
